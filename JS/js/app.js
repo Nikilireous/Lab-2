@@ -3,8 +3,9 @@
 // Работает с Django REST API (GET + QUERY)
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8000/api/requests';
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
 let deleteTimerId = null;
+let latestRequestId = 0;
 
 /**
  * Инициализация страницы после загрузки DOM
@@ -34,17 +35,20 @@ function initializePage() {
  * Загрузить студентов через GET (поиск + базовые фильтры)
  */
 async function loadStudents() {
-  try {  
-    const response = await fetch(API_BASE_URL, { method: 'GET' });
+  const requestId = ++latestRequestId;
+  try {
+    const response = await fetch(buildUrlWithFilters(getFilters()), { method: 'GET' });
 
     if (!response.ok) {
       throw new Error(`Ошибка сервера: ${response.status}`);
     }
 
     const students = await response.json();
+    if (requestId !== latestRequestId) return;
     renderStudents(students);
     updateStats(students);
   } catch (error) {
+    if (requestId !== latestRequestId) return;
     showNotice("Ошибка загрузки: " + error.message, true);
     console.error(error);
   }
@@ -55,6 +59,7 @@ async function loadStudents() {
  * Вызывается только по кнопке "Применить фильтры"
  */
 async function applyFilters() {
+  const requestId = ++latestRequestId;
   try {
     const filters = getFilters();
 
@@ -72,9 +77,11 @@ async function applyFilters() {
     }
 
     const students = await response.json();
+    if (requestId !== latestRequestId) return;
     renderStudents(students);
     updateStats(students);
   } catch (error) {
+    if (requestId !== latestRequestId) return;
     showNotice("Ошибка фильтрации: " + error.message, true);
     console.error(error);
   }
@@ -170,9 +177,9 @@ function createStudentRow(student) {
   const editUrl = `student-form.html?id=${encodeURIComponent(student.isuId)}`;
 
   row.innerHTML = `
-    <td>
+    <td data-label="Студент">
       <div class="student-cell">
-        <div class="avatar">${getInitials(student.fullName)}</div>
+        <div class="avatar">${escapeHtml(getInitials(student.fullName))}</div>
         <div>
           <a href="${profileUrl}" class="student-name">${escapeHtml(student.fullName)}</a>
           <div class="student-foreign">
@@ -181,12 +188,12 @@ function createStudentRow(student) {
         </div>
       </div>
     </td>
-    <td class="student-group">${escapeHtml(student.group)}</td>
-    <td class="student-isu">${escapeHtml(student.isuId)}</td>
-    <td class="student-dorm">№${student.dormitory}</td>
-    <td class="student-room">${student.room}</td>
-    <td class="student-date">${formatDate(student.settlementDate)}</td>
-    <td class="actions-cell">
+    <td class="student-group" data-label="Группа">${escapeHtml(student.group)}</td>
+    <td class="student-isu" data-label="ИСУ ID">${escapeHtml(student.isuId)}</td>
+    <td class="student-dorm" data-label="Общежитие">№${escapeHtml(student.dormitory)}</td>
+    <td class="student-room" data-label="Комната">${escapeHtml(student.room)}</td>
+    <td class="student-date" data-label="Срок заселения">${escapeHtml(formatDate(student.settlementDate))}</td>
+    <td class="actions-cell" data-label="Действия">
       <a href="${profileUrl}" class="btn-icon" title="Просмотр">👁</a>
       <a href="${editUrl}" class="btn-icon" title="Редактировать">✎</a>
       <button class="btn-icon action-delete" title="Удалить">⌫</button>
@@ -229,7 +236,7 @@ async function deleteStudent(isuId) {
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
 
-    const response = await fetch(`${API_BASE_URL}/${isuId}`, {
+    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(isuId)}`, {
       method: 'DELETE'
     });
 
@@ -251,7 +258,7 @@ async function deleteStudent(isuId) {
 function resetDeleteButton(button) {
   if (!(button instanceof HTMLButtonElement)) return;
   button.dataset.confirm = "";
-  button.textContent = "";
+  button.textContent = "⌫";
   button.classList.remove("confirming");
 }
 
@@ -344,7 +351,8 @@ function formatDate(dateString) {
   return date.toLocaleDateString("ru-RU", {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
+    timeZone: "UTC"
   });
 }
 
@@ -353,7 +361,7 @@ function formatDate(dateString) {
  */
 function escapeHtml(text) {
   const div = document.createElement("div");
-  div.textContent = text;
+  div.textContent = String(text);
   return div.innerHTML;
 }
 

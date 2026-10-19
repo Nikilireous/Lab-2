@@ -3,7 +3,7 @@
 // Работает с Django REST API
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8000/api/requests';
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
 let deleteTimerId = null;
 
 /**
@@ -31,7 +31,7 @@ function initializeProfile() {
  */
 async function loadStudentProfile(isuId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/${isuId}`);
+    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(isuId)}`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -136,7 +136,7 @@ async function handleDelete(studentId) {
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
 
-    const response = await fetch(`${API_BASE_URL}/${studentId}`, {
+    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(studentId)}`, {
       method: 'DELETE'
     });
 
@@ -175,7 +175,7 @@ function resetDeleteButton() {
 function showNotFound(message) {
   document.getElementById("profile-content").hidden = true;
   document.getElementById("profile-not-found").hidden = false;
-  document.getElementById("empty-text").textContent = message;
+  document.querySelector("#profile-not-found .empty-text").textContent = message;
   document.title = "Студент не найден";
 }
 
@@ -211,7 +211,8 @@ function formatDate(dateString) {
   return date.toLocaleDateString("ru-RU", {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
+    timeZone: "UTC"
   });
 }
 

@@ -3,7 +3,7 @@
 // Работает с Django REST API и validation.js
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8000/api/requests';
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
 
 /**
  * Инициализация формы
@@ -51,7 +51,7 @@ function initializeForm() {
  */
 async function loadStudentForEdit(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
+    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(id)}`);
     if (!response.ok) {
       throw new Error("Студент не найден");
     }
@@ -120,12 +120,13 @@ async function handleSubmit(event) {
 
   // 4. Если всё ок, используем нормализованные данные для отправки на сервер
   const data = validation.normalized;
+  if (editId) delete data.isuId;
 
   try {
     let response;
     if (editId) {
       // Обновление существующего студента
-      response = await fetch(`${API_BASE_URL}/${editId}`, {
+      response = await fetch(`${API_BASE_URL}/${encodeURIComponent(editId)}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -144,8 +145,8 @@ async function handleSubmit(event) {
     }
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(formatApiErrors(errorData));
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(formatApiErrors(errorData) || `Ошибка сервера: ${response.status}`);
     }
 
     const status = editId ? "updated" : "created";
@@ -165,7 +166,7 @@ function formatApiErrors(errorData) {
       .join('; ');
     return messages;
   }
-  return errorData.detail || "Ошибка сохранения";
+  return errorData.detail || null;
 }
 
 /**
@@ -198,10 +199,7 @@ function showFormErrors(form, errors) {
  */
 function clearFieldError(field) {
   field.classList.remove("input-error");
-  const nextError = field.nextElementSibling;
-  if (nextError && nextError.classList.contains("field-error")) {
-    nextError.remove();
-  }
+  field.parentElement.querySelector(".field-error")?.remove();
 }
 
 /**
