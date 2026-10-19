@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Форма студента</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html" class="logo">СУ</a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Студенты</a>
+        <a href="student-form.html" class="nav-link active">Добавить</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main" id="main-content">
+    <div class="container">
+      <!-- Уведомления -->
+      <div id="notice" class="notice" hidden></div>
+
+      <!-- Заголовок -->
+      <div class="page-header">
+        <h1 id="form-title">Добавление студента</h1>
+        <p class="page-subtitle">Поля, отмеченные *, обязательны для заполнения</p>
+      </div>
+
+      <!-- Форма -->
+      <form id="student-form" class="student-form" novalidate>
+        <div class="form-group">
+          <label for="fullName" class="form-label">ФИО студента <span class="required">*</span></label>
+          <input type="text" id="fullName" name="fullName" class="form-input" required minlength="2" maxlength="120" pattern="[a-zA-Zа-яА-ЯёЁ\s\-]+" placeholder="Иванов Иван Иванович">
+          <span class="form-hint">Только буквы (кириллица/латиница), пробелы и дефис</span>
+        </div>
+
+        <div class="form-group">
+          <label for="group" class="form-label">Группа <span class="required">*</span></label>
+          <input type="text" id="group" name="group" class="form-input" required pattern="[A-Z][1-4][1-5][0-9]{2}" placeholder="A1234" maxlength="5">
+          <span class="form-hint">Формат: заглавная буква + 4 цифры (например, A1234)</span>
+        </div>
+
+        <div class="form-group">
+          <label for="isuId" class="form-label">ИСУ ID <span class="required">*</span></label>
+          <input type="text" id="isuId" name="isuId" class="form-input" required pattern="[1-9][0-9]{5}" placeholder="123456" maxlength="6">
+          <span class="form-hint">Шестизначное число, начинается с 1-9</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dormitory" class="form-label">Номер общежития <span class="required">*</span></label>
+            <input type="number" id="dormitory" name="dormitory" class="form-input" required min="1" max="20" placeholder="5">
+            <span class="form-hint">От 1 до 20</span>
+          </div>
+
+          <div class="form-group">
+            <label for="room" class="form-label">Комната <span class="required">*</span></label>
+            <input type="number" id="room" name="room" class="form-input" required min="100" max="599" placeholder="312">
+            <span class="form-hint">От 100 до 599</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="settlementDate" class="form-label">Срок заселения <span class="required">*</span></label>
+          <input type="date" id="settlementDate" name="settlementDate" class="form-input" required>
+          <span class="form-hint">Не раньше 2010 года</span>
+        </div>
+
+        <div class="form-group form-checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" id="isForeign" name="isForeign">
+            <span class="checkbox-text">Студент является иностранцем</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Заметки</label>
+          <textarea id="notes" name="notes" class="form-input form-textarea" maxlength="500" rows="4" placeholder="Дополнительная информация о студенте..."></textarea>
+          <span class="form-hint">Осталось символов: <span id="notes-counter">500</span></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Добавить студента</button>
+          <a href="index.html" class="btn btn-secondary">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Учёт общежития © 2026</p>
+    </div>
+  </footer>
+
+  <script src="js/validation.js"></script>
+  <script src="js/form.js"></script>
+</body>
+</html>

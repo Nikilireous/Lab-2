@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль студента</title>
+  <link rel="icon" href="favicon/profile.jpg" type="image/x-icon">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html" class="logo">Сервис на запись в общежитие</a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Студенты</a>
+        <a href="student-form.html" class="nav-link active">Добавить</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main" id="main-content">
+    <div class="container">
+      <div id="notice" class="notice" hidden></div>
+
+      <a href="index.html" class="back-link">← Вернуться к списку</a>
+
+      <div id="profile-content" class="profile-content" hidden>
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="profile-avatar" id="profile-avatar">Аватар</div>
+            <div class="profile-info">
+              <h2 class="profile-name" id="profile-name"></h2>
+              <div class="profile-group" id="profile-group"></div>
+              <div class="profile-status" id="profile-status"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3 class="section-title">Основная информация</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">ИСУ ID</div>
+              <div class="info-value" id="profile-isu"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Группа</div>
+              <div class="info-value" id="profile-group-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Общежитие</div>
+              <div class="info-value" id="profile-dorm"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Комната</div>
+              <div class="info-value" id="profile-room"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3 class="section-title">Заселение</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Срок заселения</div>
+              <div class="info-value" id="profile-date"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Статус</div>
+              <div class="info-value" id="profile-foreign"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section" id="notes-section" hidden>
+          <h3 class="section-title">Заметки</h3>
+          <div class="notes-content" id="profile-notes"></div>
+        </div>
+
+        <div class="profile-actions">
+          <a href="#" class="btn btn-primary" id="edit-btn">✎ Редактировать</a>
+          <button class="btn btn-danger" id="delete-btn">⌫ Удалить</button>
+          <a href="index.html" class="btn btn-secondary">К списку</a>
+        </div>
+      </div>
+
+      <div id="profile-not-found" class="empty-state" hidden>
+        <div class="empty-icon"></div>
+        <h2 class="empty-title">Студент не найден</h2>
+        <p class="empty-text">Запись была удалена или ссылка неверна</p>
+        <a href="index.html" class="btn btn-primary">Вернуться к списку</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/cookies.js"></script>
+  <script src="/js/student-servise.js"></script>
+  <script src="/js/validation.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>

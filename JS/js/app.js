@@ -1,0 +1,361 @@
+// ============================================
+// app.js — UI-контроллер страницы списка студентов
+// Работает с Django REST API (GET + QUERY)
+// ============================================
+
+const API_BASE_URL = 'http://localhost:8000/api/requests';
+let deleteTimerId = null;
+
+/**
+ * Инициализация страницы после загрузки DOM
+ */
+function initializePage() {
+  try {
+    loadStudents(); // Стартовая загрузка через GET
+    showStatus();
+
+    // Кнопка "Применить фильтры" — QUERY-запрос
+    document.getElementById("apply-filters").addEventListener("click", applyFilters);
+
+    // Кнопка "Сбросить" — обычный GET
+    document.getElementById("reset-filters").addEventListener("click", resetFilters);
+
+    // Поиск в реальном времени — GET с debounce
+    document.getElementById("search-input").addEventListener("input", debounce(loadStudents, 300));
+
+    // Делегирование кликов по таблице
+    document.getElementById("students-table-body").addEventListener("click", handleTableClick);
+  } catch (error) {
+    showNotice("Ошибка инициализации: " + error.message, true);
+  }
+}
+
+/**
+ * Загрузить студентов через GET (поиск + базовые фильтры)
+ */
+async function loadStudents() {
+  try {  
+    const response = await fetch(API_BASE_URL, { method: 'GET' });
+
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
+
+    const students = await response.json();
+    renderStudents(students);
+    updateStats(students);
+  } catch (error) {
+    showNotice("Ошибка загрузки: " + error.message, true);
+    console.error(error);
+  }
+}
+
+/**
+ * Применить полные фильтры через QUERY-запрос
+ * Вызывается только по кнопке "Применить фильтры"
+ */
+async function applyFilters() {
+  try {
+    const filters = getFilters();
+
+    const response = await fetch(API_BASE_URL, {
+      method: 'QUERY',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(filters)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(formatApiErrors(errorData) || `Ошибка сервера: ${response.status}`);
+    }
+
+    const students = await response.json();
+    renderStudents(students);
+    updateStats(students);
+  } catch (error) {
+    showNotice("Ошибка фильтрации: " + error.message, true);
+    console.error(error);
+  }
+}
+
+/**
+ * Получить значения всех фильтров
+ */
+function getFilters() {
+  return {
+    group: document.getElementById("filter-group").value.trim() || undefined,
+    dormitory: document.getElementById("filter-dormitory").value || undefined,
+    room: document.getElementById("filter-room").value || undefined,
+    isForeign: document.getElementById("filter-isForeign").value || undefined,
+    dateFrom: document.getElementById("filter-dateFrom").value || undefined,
+    dateTo: document.getElementById("filter-dateTo").value || undefined,
+    search: document.getElementById("search-input").value.trim() || undefined
+  };
+}
+
+/**
+ * Построить URL с query-параметрами (для GET)
+ * Пустые значения не добавляются
+ */
+function buildUrlWithFilters(filters) {
+  const params = new URLSearchParams();
+
+  if (filters.group) params.append('group', filters.group);
+  if (filters.dormitory) params.append('dormitory', filters.dormitory);
+  if (filters.room) params.append('room', filters.room);
+  if (filters.isForeign) params.append('isForeign', filters.isForeign);
+  if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+  if (filters.dateTo) params.append('dateTo', filters.dateTo);
+  if (filters.search) params.append('search', filters.search);
+
+  const queryString = params.toString();
+  return queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
+}
+
+/**
+ * Сбросить все фильтры и загрузить через GET
+ */
+function resetFilters() {
+  document.getElementById("filter-group").value = "";
+  document.getElementById("filter-dormitory").value = "";
+  document.getElementById("filter-room").value = "";
+  document.getElementById("filter-isForeign").value = "";
+  document.getElementById("filter-dateFrom").value = "";
+  document.getElementById("filter-dateTo").value = "";
+  document.getElementById("search-input").value = "";
+  loadStudents();
+}
+
+/**
+ * Отрисовать таблицу студентов
+ */
+function renderStudents(students) {
+  const tableBody = document.getElementById("students-table-body");
+  const table = document.getElementById("students-table");
+  const emptyState = document.getElementById("empty-state");
+  const emptyTitle = document.getElementById("empty-title");
+  const emptyText = document.getElementById("empty-text");
+  const resultsSummary = document.getElementById("results-summary");
+
+  tableBody.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
+  for (const student of students) {
+    fragment.appendChild(createStudentRow(student));
+  }
+  tableBody.appendChild(fragment);
+
+  const hasFilters = Object.values(getFilters()).some(v => v !== undefined && v !== "");
+  table.hidden = students.length === 0;
+  emptyState.hidden = students.length !== 0;
+
+  emptyTitle.textContent = hasFilters ? "Ничего не найдено" : "Список пуст";
+  emptyText.textContent = hasFilters ? "Попробуйте изменить фильтры" : "Добавьте первого студента";
+
+  resultsSummary.textContent = hasFilters
+    ? `Найдено: ${students.length}`
+    : `Записей: ${students.length}`;
+}
+
+/**
+ * Создать строку таблицы для студента
+ */
+function createStudentRow(student) {
+  const row = document.createElement("tr");
+  row.dataset.id = student.isuId;
+
+  const profileUrl = `student-profile.html?id=${encodeURIComponent(student.isuId)}`;
+  const editUrl = `student-form.html?id=${encodeURIComponent(student.isuId)}`;
+
+  row.innerHTML = `
+    <td>
+      <div class="student-cell">
+        <div class="avatar">${getInitials(student.fullName)}</div>
+        <div>
+          <a href="${profileUrl}" class="student-name">${escapeHtml(student.fullName)}</a>
+          <div class="student-foreign">
+            ${student.isForeign ? "◎ Иностранный" : " Студент РФ"}
+          </div>
+        </div>
+      </div>
+    </td>
+    <td class="student-group">${escapeHtml(student.group)}</td>
+    <td class="student-isu">${escapeHtml(student.isuId)}</td>
+    <td class="student-dorm">№${student.dormitory}</td>
+    <td class="student-room">${student.room}</td>
+    <td class="student-date">${formatDate(student.settlementDate)}</td>
+    <td class="actions-cell">
+      <a href="${profileUrl}" class="btn-icon" title="Просмотр">👁</a>
+      <a href="${editUrl}" class="btn-icon" title="Редактировать">✎</a>
+      <button class="btn-icon action-delete" title="Удалить">⌫</button>
+    </td>
+  `;
+
+  return row;
+}
+
+/**
+ * Обработать клик по таблице (удаление)
+ */
+function handleTableClick(event) {
+  const button = event.target.closest("button.action-delete");
+  if (!button) return;
+
+  const row = button.closest("tr");
+  const id = row?.dataset.id;
+  if (!id) return;
+
+  if (button.dataset.confirm !== "yes") {
+    document.querySelectorAll("button.action-delete").forEach(resetDeleteButton);
+
+    button.dataset.confirm = "yes";
+    button.textContent = "Да?";
+    button.classList.add("confirming");
+
+    if (deleteTimerId) clearTimeout(deleteTimerId);
+    deleteTimerId = setTimeout(() => resetDeleteButton(button), 3000);
+    return;
+  }
+
+  deleteStudent(id);
+}
+
+/**
+ * Удалить студента через API
+ */
+async function deleteStudent(isuId) {
+  try {
+    if (deleteTimerId) clearTimeout(deleteTimerId);
+
+    const response = await fetch(`${API_BASE_URL}/${isuId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ошибка удаления: ${response.status}`);
+    }
+
+    showNotice("Студент удалён");
+    loadStudents();
+  } catch (error) {
+    showNotice("Ошибка удаления: " + error.message, true);
+    console.error(error);
+  }
+}
+
+/**
+ * Сбросить кнопку удаления
+ */
+function resetDeleteButton(button) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  button.dataset.confirm = "";
+  button.textContent = "";
+  button.classList.remove("confirming");
+}
+
+/**
+ * Обновить статистику
+ */
+function updateStats(students) {
+  document.getElementById("total-count").textContent = students.length;
+  document.getElementById("foreign-count").textContent =
+    students.filter(s => s.isForeign).length;
+}
+
+/**
+ * Показать уведомление о статусе (после редиректа с формы)
+ */
+function showStatus() {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("status");
+
+  if (status === "created") {
+    showNotice("Студент успешно добавлен");
+  } else if (status === "updated") {
+    showNotice("Данные студента обновлены");
+  }
+
+  if (status) {
+    history.replaceState({}, "", location.pathname);
+  }
+}
+
+/**
+ * Показать уведомление
+ */
+function showNotice(message, isError = false) {
+  const notice = document.getElementById("notice");
+  notice.textContent = message;
+  notice.hidden = false;
+  notice.classList.toggle("error", isError);
+
+  if (!isError) {
+    setTimeout(() => {
+      notice.hidden = true;
+    }, 4000);
+  }
+}
+
+/**
+ * Форматировать ошибки от API
+ */
+function formatApiErrors(errorData) {
+  if (!errorData) return null;
+  if (errorData.errors) {
+    return Object.entries(errorData.errors)
+      .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+      .join('; ');
+  }
+  return errorData.detail || null;
+}
+
+/**
+ * Debounce для поиска
+ */
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+/**
+ * Получить инициалы из ФИО
+ */
+function getInitials(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName.charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+}
+
+/**
+ * Форматировать дату
+ */
+function formatDate(dateString) {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ru-RU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+/**
+ * Экранировать HTML
+ */
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Запуск после загрузки DOM
+document.addEventListener("DOMContentLoaded", initializePage);
