@@ -123,3 +123,11 @@ class StudentAPITests(SimpleTestCase):
             HTTP_ACCESS_CONTROL_REQUEST_METHOD="QUERY",
         )
         self.assertNotIn("access-control-allow-origin", blocked)
+
+    def test_unexpected_error_has_json_response(self):
+        with patch("students.views.list_students", side_effect=RuntimeError("test failure")):
+            with self.assertLogs("students.exceptions", level="ERROR"):
+                response = self.client.get("/api/requests")
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {"errors": {"detail": "Внутренняя ошибка сервера."}})
