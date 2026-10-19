@@ -1,6 +1,4 @@
 from datetime import date
-from django.http import HttpRequest, HttpResponse
-# from .cookies import set_student_cookie, get_student, get_all_students, delete_student_cookie
 from .storage import get_all_students, get_student, save_student, delete_student
 
 
@@ -23,15 +21,15 @@ def _prepare_student(data: dict) -> dict:
     return student
 
 
-def list_students(request: HttpRequest) -> list[dict]:
+def list_students() -> list[dict]:
     return get_all_students()
 
 
-def find_student(request: HttpRequest, isu_id: str) -> dict | None:
+def find_student(isu_id: str) -> dict | None:
     return get_student(isu_id)
 
 
-def create_student(request: HttpRequest, response: HttpResponse, data: dict) -> dict:
+def create_student(data: dict) -> dict:
     student = _prepare_student(data)
     isu_id = student["isuId"]
 
@@ -41,8 +39,8 @@ def create_student(request: HttpRequest, response: HttpResponse, data: dict) -> 
     return save_student(student)
 
 
-def update_student(request: HttpRequest, response: HttpResponse, isu_id: str, data: dict) -> dict | None:
-    existing = get_student(request, isu_id)
+def update_student(isu_id: str, data: dict) -> dict | None:
+    existing = get_student(isu_id)
 
     if existing is None:
         return None
@@ -55,23 +53,29 @@ def update_student(request: HttpRequest, response: HttpResponse, isu_id: str, da
     return save_student(updated)
 
 
-def remove_student(request: HttpRequest, response: HttpResponse, isu_id: str) -> bool:
-    if get_student(isu_id) is None:
-        return False
-
-    delete_student(isu_id)
-    return True
+def remove_student(isu_id: str) -> bool:
+    return delete_student(isu_id)
 
 
 def filter_students(students: list[dict], filters: dict) -> list[dict]:
-    result = students
+    def matches(student: dict) -> bool:
+        for field in ("fullName", "group", "isuId", "dormitory", "room", "isForeign"):
+            if field in filters and student.get(field) != filters[field]:
+                return False
 
-    filter_params = ["fullName", "group", "isuId", "dormitory", "room", "settlementDate", "isForeign"]
+        settlement_date = student.get("settlementDate", "")
 
-    for param in filter_params:
+        if "settlementDate" in filters and settlement_date != filters["settlementDate"].isoformat():
+            return False
+        if "dateFrom" in filters and settlement_date < filters["dateFrom"].isoformat():
+            return False
+        if "dateTo" in filters and settlement_date > filters["dateTo"].isoformat():
+            return False
 
-        to_filter = filters.get(param)
-        if to_filter is not None:
-            result = [student for student in result if student.get(param) == to_filter]
+        search = filters.get("search", "").casefold()
+        if search and search not in student.get("fullName", "").casefold() and search not in student.get("isuId", ""):
+            return False
 
-    return result
+        return True
+
+    return [student for student in students if matches(student)]

@@ -15,16 +15,13 @@ class StudentListView(APIView):
         "options",
     ]
 
-    def options(self, request, *args, **kwargs):
-        """Обработка preflight-запроса от браузера."""
-        response = Response(status=status.HTTP_200_OK)
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Methods"] = "GET, POST, QUERY, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type"
-        return response
-
     def get(self, request):
-        students = list_students(request)
+        filters = StudentFilterSerializer(data=request.query_params.dict())
+
+        if not filters.is_valid():
+            return Response({"errors": filters.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        students = filter_students(list_students(), filters.validated_data)
         serializer = StudentSerializer(students, many=True, context={"request": request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -33,28 +30,23 @@ class StudentListView(APIView):
         serializer = StudentSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        response = Response(status=status.HTTP_201_CREATED)
+            return Response({"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         try:
-            student = create_student(request, response, serializer.validated_data)
+            student = create_student(serializer.validated_data)
         except StudentAlreadyExists as error:
             return Response({"errors": {"isuId": [str(error)]}}, status=status.HTTP_409_CONFLICT)
 
-        response.data = StudentSerializer(student, context={"request": request}).data
-
-        return response
+        data = StudentSerializer(student, context={"request": request}).data
+        return Response(data, status=status.HTTP_201_CREATED)
 
     def query(self, request):
-        students = list_students(request)
-
         filter_serializer = StudentFilterSerializer(data=request.data)
 
         if not filter_serializer.is_valid():
-            return Response({"errors": filter_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": filter_serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        students = filter_students(students, filter_serializer.validated_data)
+        students = filter_students(list_students(), filter_serializer.validated_data)
 
         serializer = StudentSerializer(students, many=True, context={"request": request})
 
@@ -63,7 +55,7 @@ class StudentListView(APIView):
 
 class StudentDetailView(APIView):
     def get(self, request, isu_id):
-        student = find_student(request, isu_id)
+        student = find_student(isu_id)
 
         if student is None:
             return Response({"errors": {"detail": "Студент не найден."}}, status=status.HTTP_404_NOT_FOUND)
@@ -73,7 +65,7 @@ class StudentDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, isu_id):
-        student = find_student(request, isu_id)
+        student = find_student(isu_id)
 
         if student is None:
             return Response({"errors": {"detail": "Студент не найден."}}, status=status.HTTP_404_NOT_FOUND)
@@ -82,28 +74,20 @@ class StudentDetailView(APIView):
                                        context={"request": request, "is_update": True,})
 
         if not serializer.is_valid():
-            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        response = Response(status=status.HTTP_200_OK)
-
-        try:
-            updated_student = update_student(request, response, isu_id, serializer.validated_data)
-        except StudentAlreadyExists as error:
-            return Response({"errors": {"isuId": [str(error)]}}, status=status.HTTP_409_CONFLICT)
+        updated_student = update_student(isu_id, serializer.validated_data)
 
         if updated_student is None:
             return Response({"errors": {"detail": "Студент не найден."}}, status=status.HTTP_404_NOT_FOUND)
 
-        response.data = StudentSerializer(updated_student, context={"request": request}).data
-
-        return response
+        data = StudentSerializer(updated_student, context={"request": request}).data
+        return Response(data, status=status.HTTP_200_OK)
 
     def delete(self, request, isu_id):
-        response = Response(status=status.HTTP_204_NO_CONTENT)
-
-        deleted = remove_student(request, response, isu_id)
+        deleted = remove_student(isu_id)
 
         if not deleted:
             return Response({"errors": {"detail": "Студент не найден."}}, status=status.HTTP_404_NOT_FOUND)
 
-        return response
+        return Response(status=status.HTTP_204_NO_CONTENT)

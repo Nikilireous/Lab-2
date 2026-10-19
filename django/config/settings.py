@@ -70,16 +70,9 @@ TEMPLATES = [
     },
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
-
 WSGI_APPLICATION = 'config.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-]
-
-CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
 ]
@@ -91,8 +84,12 @@ CORS_ALLOW_METHODS = [
     "PATCH",
     "POST",
     "PUT",
-    "QUERY",  # ← добавили
+    "QUERY",
 ]
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "students.exceptions.api_exception_handler",
+}
 
 
 # Database
@@ -128,9 +125,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -141,13 +138,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
-
-
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}

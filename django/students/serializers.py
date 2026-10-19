@@ -97,3 +97,11 @@ class StudentFilterSerializer(serializers.Serializer):
     settlementDate = serializers.DateField(required=False)
 
     isForeign = serializers.BooleanField(required=False)
+    dateFrom = serializers.DateField(required=False)
+    dateTo = serializers.DateField(required=False)
+    search = serializers.CharField(required=False, allow_blank=True, max_length=120)
+
+    def validate(self, attrs):
+        if attrs.get("dateFrom") and attrs.get("dateTo") and attrs["dateFrom"] > attrs["dateTo"]:
+            raise serializers.ValidationError({"dateTo": "Конец периода раньше начала."})
+        return attrs
