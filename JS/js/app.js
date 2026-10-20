@@ -12,16 +12,16 @@ let latestRequestId = 0;
  */
 function initializePage() {
   try {
-    loadStudents(); // Стартовая загрузка через GET
+    applyFilters(); // Стартовая загрузка без фильтров — GET
     showStatus();
 
-    // Кнопка "Применить фильтры" — QUERY-запрос
+    // Метод запроса зависит от количества заполненных фильтров
     document.getElementById("apply-filters").addEventListener("click", applyFilters);
 
-    // Кнопка "Сбросить" — обычный GET
+    // Сбросить фильтры
     document.getElementById("reset-filters").addEventListener("click", resetFilters);
 
-    // Поиск в реальном времени — QUERY с небольшой задержкой
+    // Поиск в реальном времени с небольшой задержкой
     document.getElementById("search-input").addEventListener("input", debounce(applyFilters, 300));
 
     // Делегирование кликов по таблице
@@ -32,43 +32,30 @@ function initializePage() {
 }
 
 /**
- * Загрузить полный список студентов через GET
- */
-async function loadStudents() {
-  const requestId = ++latestRequestId;
-  try {
-    const response = await fetch(API_BASE_URL, { method: 'GET' });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка сервера: ${response.status}`);
-    }
-
-    const students = await response.json();
-    if (requestId !== latestRequestId) return;
-    renderStudents(students);
-    updateStats(students);
-  } catch (error) {
-    if (requestId !== latestRequestId) return;
-    showNotice("Ошибка загрузки: " + error.message, true);
-    console.error(error);
-  }
-}
-
-/**
- * Применить фильтры через QUERY-запрос
+ * До двух заполненных фильтров — GET, от трёх — QUERY
  */
 async function applyFilters() {
   const requestId = ++latestRequestId;
   try {
-    const filters = getFilters();
+    // Пустые поля не влияют на выбор метода запроса.
+    const filters = Object.fromEntries(
+      Object.entries(getFilters()).filter(([, value]) => value !== undefined && value !== "")
+    );
+    const filterCount = Object.keys(filters).length;
+    let url = API_BASE_URL;
+    let options = { method: 'GET' };
 
-    const response = await fetch(API_BASE_URL, {
-      method: 'QUERY',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(filters)
-    });
+    if (filterCount > 2) {
+      options = {
+        method: 'QUERY',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filters)
+      };
+    } else if (filterCount > 0) {
+      url += '?' + new URLSearchParams(filters).toString();
+    }
+
+    const response = await fetch(url, options);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -81,7 +68,7 @@ async function applyFilters() {
     updateStats(students);
   } catch (error) {
     if (requestId !== latestRequestId) return;
-    showNotice("Ошибка фильтрации: " + error.message, true);
+    showNotice("Ошибка загрузки: " + error.message, true);
     console.error(error);
   }
 }
@@ -102,7 +89,7 @@ function getFilters() {
 }
 
 /**
- * Сбросить все фильтры и загрузить через GET
+ * Сбросить все фильтры и загрузить полный список
  */
 function resetFilters() {
   document.getElementById("filter-group").value = "";
@@ -112,7 +99,7 @@ function resetFilters() {
   document.getElementById("filter-dateFrom").value = "";
   document.getElementById("filter-dateTo").value = "";
   document.getElementById("search-input").value = "";
-  loadStudents();
+  applyFilters();
 }
 
 /**
@@ -153,8 +140,8 @@ function createStudentRow(student) {
   const row = document.createElement("tr");
   row.dataset.id = student.isuId;
 
-  const profileUrl = `student-profile.html?v=students-api-2&id=${encodeURIComponent(student.isuId)}`;
-  const editUrl = `student-form.html?v=students-api-2&id=${encodeURIComponent(student.isuId)}`;
+  const profileUrl = `student-profile.html?v=students-api-3&id=${encodeURIComponent(student.isuId)}`;
+  const editUrl = `student-form.html?v=students-api-3&id=${encodeURIComponent(student.isuId)}`;
 
   row.innerHTML = `
     <td data-label="Студент">
@@ -225,11 +212,7 @@ async function deleteStudent(isuId) {
     }
 
     showNotice("Студент удалён");
-    if (Object.values(getFilters()).some(value => value !== undefined && value !== "")) {
-      applyFilters();
-    } else {
-      loadStudents();
-    }
+    applyFilters();
   } catch (error) {
     showNotice("Ошибка удаления: " + error.message, true);
     console.error(error);
@@ -269,7 +252,9 @@ function showStatus() {
   }
 
   if (status) {
-    history.replaceState({}, "", location.pathname);
+    params.delete("status");
+    const query = params.toString();
+    history.replaceState({}, "", location.pathname + (query ? `?${query}` : ""));
   }
 }
 
