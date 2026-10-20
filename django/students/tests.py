@@ -87,6 +87,25 @@ class StudentAPITests(SimpleTestCase):
         self.assertEqual(len(saved), 1)
         self.assertEqual(saved[0]["isuId"], "123456")
 
+    def test_old_urls_work_for_open_browser_tabs(self):
+        student = self.student("123456", "Иван Иванов")
+        created = self.client.post("/api/requests", student, content_type="application/json")
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(self.client.get("/api/requests/123456").status_code, 200)
+        self.assertEqual(self.client.get("/api/students/123456/").status_code, 200)
+
+        result = self.client.generic(
+            "QUERY", "/api/requests", data=b"{}", content_type="application/json"
+        )
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(len(result.json()), 1)
+
+        updated = self.client.patch(
+            "/api/requests/123456", {"room": 511}, content_type="application/json"
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(self.client.delete("/api/requests/123456").status_code, 204)
+
     def test_get_and_query_filter_stored_students(self):
         first = self.student("123456", "Иван Иванов")
         second = self.student("654321", "Анна Петрова", "M3402", 9, "2024-09-01")

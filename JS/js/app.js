@@ -153,8 +153,8 @@ function createStudentRow(student) {
   const row = document.createElement("tr");
   row.dataset.id = student.isuId;
 
-  const profileUrl = `student-profile.html?id=${encodeURIComponent(student.isuId)}`;
-  const editUrl = `student-form.html?id=${encodeURIComponent(student.isuId)}`;
+  const profileUrl = `student-profile.html?v=students-api-2&id=${encodeURIComponent(student.isuId)}`;
+  const editUrl = `student-form.html?v=students-api-2&id=${encodeURIComponent(student.isuId)}`;
 
   row.innerHTML = `
     <td data-label="Студент">

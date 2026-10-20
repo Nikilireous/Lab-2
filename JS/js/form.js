@@ -76,7 +76,7 @@ async function loadStudentForEdit(id) {
   } catch (error) {
     showNotice(error.message, true);
     setTimeout(() => {
-      location.href = "index.html";
+      location.href = "index.html?v=students-api-2";
     }, 1500);
   }
 }
@@ -150,7 +150,7 @@ async function handleSubmit(event) {
     }
 
     const status = editId ? "updated" : "created";
-    location.href = `index.html?status=${status}`;
+    location.href = `index.html?v=students-api-2&status=${status}`;
   } catch (error) {
     showNotice(error.message, true);
   }

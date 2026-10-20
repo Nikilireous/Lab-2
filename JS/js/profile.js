@@ -100,7 +100,7 @@ function renderProfile(student) {
   }
 
   // Ссылка на редактирование
-  const editUrl = "student-form.html?id=" + encodeURIComponent(student.isuId);
+  const editUrl = "student-form.html?v=students-api-2&id=" + encodeURIComponent(student.isuId);
   document.getElementById("edit-btn").setAttribute("href", editUrl);
 }
 
@@ -149,7 +149,7 @@ async function handleDelete(studentId) {
 
     showNotice("Студент удалён");
     setTimeout(() => {
-      location.href = "index.html";
+      location.href = "index.html?v=students-api-2";
     }, 1500);
   } catch (error) {
     showNotice("Ошибка удаления: " + error.message, true);
