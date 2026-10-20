@@ -3,7 +3,7 @@
 // Работает с Django REST API
 // ============================================
 
-const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
 let deleteTimerId = null;
 
 /**
@@ -31,7 +31,7 @@ function initializeProfile() {
  */
 async function loadStudentProfile(isuId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(isuId)}`);
+    const response = await fetch(`${API_BASE_URL}${encodeURIComponent(isuId)}/`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -136,7 +136,7 @@ async function handleDelete(studentId) {
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
 
-    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(studentId)}`, {
+    const response = await fetch(`${API_BASE_URL}${encodeURIComponent(studentId)}/`, {
       method: 'DELETE'
     });
 

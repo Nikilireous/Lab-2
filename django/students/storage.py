@@ -4,7 +4,6 @@
 """
 
 import json
-import os
 import threading
 from pathlib import Path
 
@@ -15,32 +14,25 @@ STORAGE_FILE = Path(__file__).parent / "students.json"
 _lock = threading.Lock()
 
 
-def _load_data() -> dict[str, dict]:
+def _load_data() -> list[dict]:
     """
     Загрузить всех студентов из JSON-файла.
-    Возвращает словарь вида {isuId: student_dict}.
+    Старый формат со словарём также читается без потери записей.
     """
     if not STORAGE_FILE.exists():
-        return {}
-    try:
-        with open(STORAGE_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            # Если файл содержит список — конвертируем в словарь
-            if isinstance(data, list):
-                return {
-                    str(s.get("isuId", "")): s
-                    for s in data
-                    if "isuId" in s
-                }
-            if isinstance(data, dict):
-                return data
-    except (json.JSONDecodeError, OSError) as e:
-        print(f"Ошибка чтения {STORAGE_FILE}: {e}")
-    return {}
+        return []
+    with open(STORAGE_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        # Поддержка старых файлов: одна запись или словарь по ИСУ ID.
+        return [data] if "isuId" in data else list(data.values())
+    raise ValueError("Неверный формат файла студентов")
 
 
-def _save_data(data: dict[str, dict]) -> None:
-    """Сохранить словарь студентов в JSON-файл."""
+def _save_data(data: list[dict]) -> None:
+    """Сохранить студентов массивом JSON-объектов."""
     STORAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(STORAGE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -50,7 +42,7 @@ def get_all_students() -> list[dict]:
     """Получить список всех студентов."""
     with _lock:
         data = _load_data()
-    return list(data.values())
+    return data
 
 
 def get_student(isu_id: str) -> dict | None:
@@ -58,7 +50,7 @@ def get_student(isu_id: str) -> dict | None:
     isu_id = str(isu_id)
     with _lock:
         data = _load_data()
-    return data.get(isu_id)
+    return next((student for student in data if str(student["isuId"]) == isu_id), None)
 
 
 def save_student(student: dict) -> dict:
@@ -70,7 +62,12 @@ def save_student(student: dict) -> dict:
     student = {**student, "isuId": isu_id}
     with _lock:
         data = _load_data()
-        data[isu_id] = student
+        for index, existing in enumerate(data):
+            if str(existing["isuId"]) == isu_id:
+                data[index] = student
+                break
+        else:
+            data.append(student)
         _save_data(data)
     return student
 
@@ -83,8 +80,9 @@ def delete_student(isu_id: str) -> bool:
     isu_id = str(isu_id)
     with _lock:
         data = _load_data()
-        if isu_id not in data:
-            return False
-        del data[isu_id]
-        _save_data(data)
-    return True
+        for index, student in enumerate(data):
+            if str(student["isuId"]) == isu_id:
+                del data[index]
+                _save_data(data)
+                return True
+    return False

@@ -4,6 +4,6 @@ from .views import StudentDetailView, StudentListView
 
 
 urlpatterns = [
-    path("requests", StudentListView.as_view(), name="student-list"),
-    path("requests/<str:isu_id>", StudentDetailView.as_view(), name="student-detail")
+    path("students/", StudentListView.as_view(), name="student-list"),
+    path("students/<str:isu_id>/", StudentDetailView.as_view(), name="student-detail"),
 ]

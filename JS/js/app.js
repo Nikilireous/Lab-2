@@ -3,7 +3,7 @@
 // Работает с Django REST API (GET + QUERY)
 // ============================================
 
-const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
 let deleteTimerId = null;
 let latestRequestId = 0;
 
@@ -216,7 +216,7 @@ async function deleteStudent(isuId) {
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
 
-    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(isuId)}`, {
+    const response = await fetch(`${API_BASE_URL}${encodeURIComponent(isuId)}/`, {
       method: 'DELETE'
     });
 

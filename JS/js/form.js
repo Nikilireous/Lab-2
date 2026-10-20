@@ -3,7 +3,7 @@
 // Работает с Django REST API и validation.js
 // ============================================
 
-const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/requests`;
+const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
 
 /**
  * Инициализация формы
@@ -51,7 +51,7 @@ function initializeForm() {
  */
 async function loadStudentForEdit(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(id)}`);
+    const response = await fetch(`${API_BASE_URL}${encodeURIComponent(id)}/`);
     if (!response.ok) {
       throw new Error("Студент не найден");
     }
@@ -126,7 +126,7 @@ async function handleSubmit(event) {
     let response;
     if (editId) {
       // Обновление существующего студента
-      response = await fetch(`${API_BASE_URL}/${encodeURIComponent(editId)}`, {
+      response = await fetch(`${API_BASE_URL}${encodeURIComponent(editId)}/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

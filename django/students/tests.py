@@ -13,6 +13,7 @@ class StudentAPITests(SimpleTestCase):
         self.addCleanup(directory.cleanup)
 
         storage_file = Path(directory.name) / "students.json"
+        self.storage_file = storage_file
         storage_patch = patch("students.storage.STORAGE_FILE", storage_file)
         storage_patch.start()
         self.addCleanup(storage_patch.stop)
@@ -32,7 +33,7 @@ class StudentAPITests(SimpleTestCase):
     def query(self, filters, **headers):
         return self.client.generic(
             "QUERY",
-            "/api/requests",
+            "/api/students/",
             data=json.dumps(filters).encode("utf-8"),
             content_type="application/json",
             **headers,
@@ -40,49 +41,71 @@ class StudentAPITests(SimpleTestCase):
 
     def test_create_update_delete_and_errors(self):
         student = self.student("123456", "Иван Иванов")
-        created = self.client.post("/api/requests", student, content_type="application/json")
+        created = self.client.post("/api/students/", student, content_type="application/json")
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created.json()["isuId"], "123456")
 
-        duplicate = self.client.post("/api/requests", student, content_type="application/json")
+        duplicate = self.client.post("/api/students/", student, content_type="application/json")
         self.assertEqual(duplicate.status_code, 409)
         self.assertIn("isuId", duplicate.json()["errors"])
 
         updated = self.client.patch(
-            "/api/requests/123456", {"room": 511}, content_type="application/json"
+            "/api/students/123456/", {"room": 511}, content_type="application/json"
         )
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["room"], 511)
 
         immutable_id = self.client.patch(
-            "/api/requests/123456", {"isuId": "654321"}, content_type="application/json"
+            "/api/students/123456/", {"isuId": "654321"}, content_type="application/json"
         )
         self.assertEqual(immutable_id.status_code, 422)
         self.assertIn("isuId", immutable_id.json()["errors"])
 
-        deleted = self.client.delete("/api/requests/123456")
+        deleted = self.client.delete("/api/students/123456/")
         self.assertEqual(deleted.status_code, 204)
-        self.assertEqual(self.client.get("/api/requests/123456").status_code, 404)
+        self.assertEqual(self.client.get("/api/students/123456/").status_code, 404)
+
+    def test_json_file_contains_student_objects(self):
+        student = self.student("123456", "Иван Иванов")
+        self.client.post("/api/students/", student, content_type="application/json")
+        self.assertEqual(json.loads(self.storage_file.read_text(encoding="utf-8")), [student])
+
+        self.client.patch("/api/students/123456/", {"room": 511}, content_type="application/json")
+        saved = json.loads(self.storage_file.read_text(encoding="utf-8"))
+        self.assertEqual(saved[0]["isuId"], "123456")
+        self.assertEqual(saved[0]["room"], 511)
+
+    def test_old_json_object_is_preserved(self):
+        student = self.student("123456", "Иван Иванов")
+        self.storage_file.write_text(json.dumps(student), encoding="utf-8")
+
+        response = self.client.get("/api/students/123456/")
+        self.assertEqual(response.status_code, 200)
+        self.client.patch("/api/students/123456/", {"room": 511}, content_type="application/json")
+
+        saved = json.loads(self.storage_file.read_text(encoding="utf-8"))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0]["isuId"], "123456")
 
     def test_get_and_query_filter_stored_students(self):
         first = self.student("123456", "Иван Иванов")
         second = self.student("654321", "Анна Петрова", "M3402", 9, "2024-09-01")
         second["isForeign"] = True
-        self.client.post("/api/requests", first, content_type="application/json")
-        self.client.post("/api/requests", second, content_type="application/json")
+        self.client.post("/api/students/", first, content_type="application/json")
+        self.client.post("/api/students/", second, content_type="application/json")
 
-        all_students = self.client.get("/api/requests")
+        all_students = self.client.get("/api/students/")
         self.assertEqual(all_students.status_code, 200)
         self.assertEqual({item["isuId"] for item in all_students.json()}, {"123456", "654321"})
 
-        foreign_group = self.client.get("/api/requests?group=M3402")
+        foreign_group = self.client.get("/api/students/?group=M3402")
         self.assertEqual([item["isuId"] for item in foreign_group.json()], ["654321"])
 
-        get_result = self.client.get("/api/requests?group=M3301&dormitory=8")
+        get_result = self.client.get("/api/students/?group=M3301&dormitory=8")
         self.assertEqual(get_result.status_code, 200)
         self.assertEqual([item["isuId"] for item in get_result.json()], ["123456"])
 
-        search_result = self.client.get("/api/requests?search=пет")
+        search_result = self.client.get("/api/students/?search=пет")
         self.assertEqual([item["isuId"] for item in search_result.json()], ["654321"])
 
         query_result = self.query({"dateFrom": "2025-01-01", "dateTo": "2025-12-31"})
@@ -94,7 +117,7 @@ class StudentAPITests(SimpleTestCase):
         self.assertIn("dateTo", invalid_range.json()["errors"])
 
         malformed_json = self.client.generic(
-            "QUERY", "/api/requests", data=b"{", content_type="application/json"
+            "QUERY", "/api/students/", data=b"{", content_type="application/json"
         )
         self.assertEqual(malformed_json.status_code, 400)
         self.assertIn("errors", malformed_json.json())
@@ -103,7 +126,7 @@ class StudentAPITests(SimpleTestCase):
         for origin in ("http://localhost:5500", "http://127.0.0.1:5500"):
             with self.subTest(origin=origin):
                 preflight = self.client.options(
-                    "/api/requests",
+                    "/api/students/",
                     HTTP_ORIGIN=origin,
                     HTTP_ACCESS_CONTROL_REQUEST_METHOD="QUERY",
                     HTTP_ACCESS_CONTROL_REQUEST_HEADERS="content-type",
@@ -118,7 +141,7 @@ class StudentAPITests(SimpleTestCase):
                 self.assertEqual(response["access-control-allow-origin"], origin)
 
         blocked = self.client.options(
-            "/api/requests",
+            "/api/students/",
             HTTP_ORIGIN="http://example.com",
             HTTP_ACCESS_CONTROL_REQUEST_METHOD="QUERY",
         )
@@ -127,7 +150,7 @@ class StudentAPITests(SimpleTestCase):
     def test_unexpected_error_has_json_response(self):
         with patch("students.views.list_students", side_effect=RuntimeError("test failure")):
             with self.assertLogs("students.exceptions", level="ERROR"):
-                response = self.client.get("/api/requests")
+                response = self.client.get("/api/students/")
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json(), {"errors": {"detail": "Внутренняя ошибка сервера."}})
