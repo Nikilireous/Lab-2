@@ -21,8 +21,8 @@ function initializePage() {
     // Кнопка "Сбросить" — обычный GET
     document.getElementById("reset-filters").addEventListener("click", resetFilters);
 
-    // Поиск в реальном времени — GET с debounce
-    document.getElementById("search-input").addEventListener("input", debounce(loadStudents, 300));
+    // Поиск в реальном времени — QUERY с небольшой задержкой
+    document.getElementById("search-input").addEventListener("input", debounce(applyFilters, 300));
 
     // Делегирование кликов по таблице
     document.getElementById("students-table-body").addEventListener("click", handleTableClick);
@@ -32,12 +32,12 @@ function initializePage() {
 }
 
 /**
- * Загрузить студентов через GET (поиск + базовые фильтры)
+ * Загрузить полный список студентов через GET
  */
 async function loadStudents() {
   const requestId = ++latestRequestId;
   try {
-    const response = await fetch(buildUrlWithFilters(getFilters()), { method: 'GET' });
+    const response = await fetch(API_BASE_URL, { method: 'GET' });
 
     if (!response.ok) {
       throw new Error(`Ошибка сервера: ${response.status}`);
@@ -55,8 +55,7 @@ async function loadStudents() {
 }
 
 /**
- * Применить полные фильтры через QUERY-запрос
- * Вызывается только по кнопке "Применить фильтры"
+ * Применить фильтры через QUERY-запрос
  */
 async function applyFilters() {
   const requestId = ++latestRequestId;
@@ -100,25 +99,6 @@ function getFilters() {
     dateTo: document.getElementById("filter-dateTo").value || undefined,
     search: document.getElementById("search-input").value.trim() || undefined
   };
-}
-
-/**
- * Построить URL с query-параметрами (для GET)
- * Пустые значения не добавляются
- */
-function buildUrlWithFilters(filters) {
-  const params = new URLSearchParams();
-
-  if (filters.group) params.append('group', filters.group);
-  if (filters.dormitory) params.append('dormitory', filters.dormitory);
-  if (filters.room) params.append('room', filters.room);
-  if (filters.isForeign) params.append('isForeign', filters.isForeign);
-  if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-  if (filters.dateTo) params.append('dateTo', filters.dateTo);
-  if (filters.search) params.append('search', filters.search);
-
-  const queryString = params.toString();
-  return queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
 }
 
 /**
@@ -245,7 +225,11 @@ async function deleteStudent(isuId) {
     }
 
     showNotice("Студент удалён");
-    loadStudents();
+    if (Object.values(getFilters()).some(value => value !== undefined && value !== "")) {
+      applyFilters();
+    } else {
+      loadStudents();
+    }
   } catch (error) {
     showNotice("Ошибка удаления: " + error.message, true);
     console.error(error);
