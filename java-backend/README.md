@@ -26,6 +26,8 @@ CREATE ROLE lab3 LOGIN PASSWORD 'your_database_password';
 CREATE DATABASE students_lab3 OWNER lab3;
 ```
 
+Перед этим запустите PostgreSQL. Например, на macOS с Homebrew: `brew services start postgresql@16`.
+
 Скопируйте `.env.example` в `.env`. Задайте `DB_URL`, `DB_USER`, `DB_PASSWORD`, случайный `JWT_SECRET` длиной не менее 32 байт, а также имя, почту и пароль первого администратора. Файл `.env` игнорируется Git. Администратор создаётся при первом запуске, если пользователя с этим именем ещё нет. Регистрация через API всегда выдаёт роль `USER`.
 
 ## Сборка и запуск
@@ -34,6 +36,7 @@ CREATE DATABASE students_lab3 OWNER lab3;
 
 ```bash
 cd java-backend
+export WILDFLY_HOME=/path/to/wildfly-39.0.1.Final
 set -a
 source .env
 set +a
@@ -45,6 +48,7 @@ mvn clean package
 
 ```bash
 cd java-backend
+export WILDFLY_HOME=/path/to/wildfly-39.0.1.Final
 set -a
 source .env
 set +a
