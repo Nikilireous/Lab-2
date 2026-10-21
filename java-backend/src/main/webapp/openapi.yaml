@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: Учёт студентов общежития — лабораторная №3
+  version: 1.0.0
+  description: Jakarta EE REST API с PostgreSQL, Hibernate/JPA и JWT.
+servers:
+  - url: http://localhost:8000/api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Student:
+      type: object
+      required: [fullName, group, isuId, dormitory, room, settlementDate, isForeign]
+      properties:
+        fullName: { type: string, example: Иванов Иван Иванович }
+        group: { type: string, example: P3212 }
+        isuId: { type: string, pattern: '^[1-9][0-9]{5}$', example: '123456' }
+        dormitory: { type: integer, minimum: 1, maximum: 20, example: 7 }
+        room: { type: integer, minimum: 100, maximum: 599, example: 315 }
+        settlementDate: { type: string, format: date, example: '2025-09-01' }
+        isForeign: { type: boolean, example: false }
+        notes: { type: string, maxLength: 500, example: '' }
+    User:
+      type: object
+      properties:
+        username: { type: string, example: student1 }
+        email: { type: string, format: email, example: student@example.com }
+        role: { type: string, enum: [USER, ADMIN] }
+    Auth:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+    Error:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties: { type: string }
+          example: { detail: 'Студент не найден.' }
+  responses:
+    BadRequest:
+      description: Ошибка данных запроса
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Нет действительного access-токена
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Недостаточно прав
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+paths:
+  /auth/register:
+    post:
+      summary: Регистрация с ролью USER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string, example: student1 }
+                email: { type: string, format: email, example: student@example.com }
+                password: { type: string, format: password, example: password123 }
+      responses:
+        '201':
+          description: Пользователь зарегистрирован
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Auth' }
+        '409': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/BadRequest' }
+  /auth/login:
+    post:
+      summary: Вход по имени или почте
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: admin }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Пара JWT и данные пользователя
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Auth' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      summary: Выдать новую пару токенов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Новая пара JWT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Auth' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/me:
+    get:
+      summary: Текущий пользователь
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Учётная запись
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /students/:
+    get:
+      summary: Список, фильтры, поиск, сортировка и пагинация
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: fullName, schema: { type: string } }
+        - { in: query, name: group, schema: { type: string } }
+        - { in: query, name: isuId, schema: { type: string } }
+        - { in: query, name: dormitory, schema: { type: integer } }
+        - { in: query, name: room, schema: { type: integer } }
+        - { in: query, name: isForeign, schema: { type: boolean } }
+        - { in: query, name: settlementDate, schema: { type: string, format: date } }
+        - { in: query, name: dateFrom, schema: { type: string, format: date } }
+        - { in: query, name: dateTo, schema: { type: string, format: date } }
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: sort, schema: { type: string, enum: [fullName, group, isuId, dormitory, room, settlementDate, isForeign] } }
+        - { in: query, name: order, schema: { type: string, enum: [asc, desc] } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Массив студентов; общее число в X-Total-Count
+          headers:
+            X-Total-Count: { schema: { type: integer } }
+            X-Page: { schema: { type: integer } }
+            X-Page-Size: { schema: { type: integer } }
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Student' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/BadRequest' }
+    post:
+      summary: Создать студента (ADMIN)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Student' }
+      responses:
+        '201':
+          description: Студент создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/BadRequest' }
+    x-query:
+      summary: Фильтрация JSON-телом для существующего клиента
+      description: Тот же поиск, что GET, но параметры передаются JSON-объектом.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Массив студентов
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Student' } }
+  /students/{isuId}/:
+    parameters:
+      - { in: path, name: isuId, required: true, schema: { type: string, example: '123456' } }
+    get:
+      summary: Карточка студента
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Студент
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '404': { $ref: '#/components/responses/BadRequest' }
+    put:
+      summary: Полная замена полей (ADMIN)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Student' }
+      responses:
+        '200':
+          description: Обновлённый студент
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      summary: Частичное обновление (ADMIN)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Обновлённый студент
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      summary: Удалить студента (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Студент удалён }
+        '403': { $ref: '#/components/responses/Forbidden' }

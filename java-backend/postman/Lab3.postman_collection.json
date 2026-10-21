@@ -1,0 +1,66 @@
+{
+  "info": {
+    "name": "Лабораторная №3 — студенты и JWT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://127.0.0.1:8000/api"},
+    {"key": "accessToken", "value": ""},
+    {"key": "refreshToken", "value": ""},
+    {"key": "readerToken", "value": ""},
+    {"key": "isuId", "value": "654321"}
+  ],
+  "item": [
+    {
+      "name": "1. Регистрация USER",
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"username\":\"reader_demo\",\"email\":\"reader_demo@example.com\",\"password\":\"Reader12345\"}"}, "url": "{{baseUrl}}/auth/register"},
+      "event": [{"listen": "test", "script": {"exec": ["if (pm.response.code === 201) pm.collectionVariables.set('readerToken', pm.response.json().accessToken);"]}}]
+    },
+    {
+      "name": "2. USER не может создать студента (403)",
+      "request": {"method": "POST", "header": [{"key": "Authorization", "value": "Bearer {{readerToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"fullName\":\"Иванов Иван Иванович\",\"group\":\"P3212\",\"isuId\":\"{{isuId}}\",\"dormitory\":7,\"room\":315,\"settlementDate\":\"2025-09-01\",\"isForeign\":false,\"notes\":\"\"}"}, "url": "{{baseUrl}}/students/"}
+    },
+    {
+      "name": "3. Вход ADMIN",
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"УКАЖИТЕ_ПАРОЛЬ_ИЗ_.env\"}"}, "url": "{{baseUrl}}/auth/login"},
+      "event": [{"listen": "test", "script": {"exec": ["if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('accessToken', data.accessToken); pm.collectionVariables.set('refreshToken', data.refreshToken); }"]}}]
+    },
+    {
+      "name": "4. Создать студента",
+      "request": {"method": "POST", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"fullName\":\"Иванов Иван Иванович\",\"group\":\"P3212\",\"isuId\":\"{{isuId}}\",\"dormitory\":7,\"room\":315,\"settlementDate\":\"2025-09-01\",\"isForeign\":false,\"notes\":\"\"}"}, "url": "{{baseUrl}}/students/"}
+    },
+    {
+      "name": "5. Список и пагинация",
+      "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}], "url": "{{baseUrl}}/students/?page=1&size=10&sort=isuId&order=asc"}
+    },
+    {
+      "name": "6. Фильтры GET",
+      "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}], "url": "{{baseUrl}}/students/?group=P3212&dormitory=7"}
+    },
+    {
+      "name": "7. Фильтры QUERY",
+      "request": {"method": "QUERY", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"group\":\"P3212\",\"dormitory\":7,\"isForeign\":false}"}, "url": "{{baseUrl}}/students/"}
+    },
+    {
+      "name": "8. Карточка студента",
+      "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{readerToken}}"}], "url": "{{baseUrl}}/students/{{isuId}}/"}
+    },
+    {
+      "name": "9. Частичное обновление PATCH",
+      "request": {"method": "PATCH", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"notes\":\"Изменено через Postman\"}"}, "url": "{{baseUrl}}/students/{{isuId}}/"}
+    },
+    {
+      "name": "10. Полное обновление PUT",
+      "request": {"method": "PUT", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"fullName\":\"Иванов Иван Иванович\",\"group\":\"P3212\",\"isuId\":\"{{isuId}}\",\"dormitory\":7,\"room\":316,\"settlementDate\":\"2025-09-01\",\"isForeign\":false,\"notes\":\"Полное обновление\"}"}, "url": "{{baseUrl}}/students/{{isuId}}/"}
+    },
+    {
+      "name": "11. Обновить JWT",
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"refreshToken\":\"{{refreshToken}}\"}"}, "url": "{{baseUrl}}/auth/refresh"},
+      "event": [{"listen": "test", "script": {"exec": ["if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('accessToken', data.accessToken); pm.collectionVariables.set('refreshToken', data.refreshToken); }"]}}]
+    },
+    {
+      "name": "12. Удалить студента",
+      "request": {"method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}], "url": "{{baseUrl}}/students/{{isuId}}/"}
+    }
+  ]
+}
