@@ -9,10 +9,12 @@ import urllib.request
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-for line in (ROOT / ".env").read_text().splitlines():
-    if line and not line.startswith("#"):
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key, value)
+env_file = ROOT / ".env"
+if env_file.exists():
+    for line in env_file.read_text().splitlines():
+        if line and not line.startswith("#"):
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key, value)
 
 API = os.getenv("API_URL", "http://127.0.0.1:8000/api/")
 
@@ -48,16 +50,22 @@ def expect(status, method, path, body=None, token=None, headers=None):
 
 
 def main():
+    if os.getenv("LAB3_TEST_DATABASE") != "1":
+        raise SystemExit("Smoke-тест создаёт пользователя. Запускайте его только на отдельной тестовой БД с LAB3_TEST_DATABASE=1.")
     admin, _ = expect(200, "POST", "auth/login", {
         "username": os.environ["ADMIN_USERNAME"],
         "password": os.environ["ADMIN_PASSWORD"],
     })
     admin_token = admin["accessToken"]
-    reader, _ = expect(201, "POST", "auth/register", {
+    reader_data = {
         "username": f"reader_{random.randrange(100000, 999999)}",
         "email": f"reader_{random.randrange(100000, 999999)}@example.com",
         "password": "Reader12345",
-    })
+    }
+    reader, _ = expect(201, "POST", "auth/register", reader_data)
+    expect(409, "POST", "auth/register", reader_data)
+    expect(422, "POST", "auth/register", {**reader_data, "password": "short"})
+    expect(401, "POST", "auth/refresh", {"refreshToken": reader["accessToken"]})
     reader_token = reader["accessToken"]
     assert reader["user"]["role"] == "USER"
 
@@ -70,6 +78,7 @@ def main():
     expect(403, "POST", "students/", student, reader_token)
     expect(201, "POST", "students/", student, admin_token)
     try:
+        expect(409, "POST", "students/", student, admin_token)
         detail, _ = expect(200, "GET", f"students/{student_id}/", token=reader_token)
         assert detail["isuId"] == student_id
         listing, headers = expect(200, "GET", "students/?group=P3212&sort=fullName&order=desc&page=1&size=5", token=reader_token)
@@ -79,6 +88,8 @@ def main():
             "group": "P3212", "dormitory": 7, "isForeign": False,
         }, reader_token)
         assert any(item["isuId"] == student_id for item in queried)
+        literal_search, _ = expect(200, "GET", "students/?search=%25", token=reader_token)
+        assert all(item["isuId"] != student_id for item in literal_search)
         expect(422, "PATCH", f"students/{student_id}/", {
             "fullName": "Петров Пётр Петрович", "room": 999,
         }, admin_token)
@@ -90,6 +101,7 @@ def main():
         changed, _ = expect(200, "PUT", f"students/{student_id}/", student, admin_token)
         assert changed["notes"] == "Полное обновление"
         expect(403, "DELETE", f"students/{student_id}/", token=reader_token)
+        expect(403, "PATCH", f"students/{student_id}/", {"notes": "Нельзя"}, reader_token)
         expect(422, "GET", "students/?room=abc", token=reader_token)
         expect(401, "GET", "students/")
         refreshed, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})

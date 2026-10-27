@@ -1,6 +1,6 @@
 // ============================================
 // form.js — логика формы добавления/редактирования студента
-// Работает с Django REST API и validation.js
+// Работает с REST API и validation.js
 // ============================================
 
 const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
@@ -122,6 +122,8 @@ async function handleSubmit(event) {
   const data = validation.normalized;
   if (editId) delete data.isuId;
 
+  const submitBtn = form.querySelector('[type="submit"]');
+  submitBtn.disabled = true;
   try {
     let response;
     if (editId) {
@@ -153,6 +155,8 @@ async function handleSubmit(event) {
     location.href = `index.html?v=students-api-3&status=${status}`;
   } catch (error) {
     showNotice(error.message, true);
+  } finally {
+    submitBtn.disabled = false;
   }
 }
 

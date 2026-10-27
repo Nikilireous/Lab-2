@@ -6,10 +6,12 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import ru.itmo.lab3.dto.StudentFilter;
 import ru.itmo.lab3.model.Student;
 
@@ -35,8 +37,13 @@ public class StudentRepository {
         CriteriaQuery<Student> query = cb.createQuery(Student.class);
         Root<Student> root = query.from(Student.class);
         query.where(predicates(cb, root, filter));
-        query.orderBy(filter.descending
-            ? cb.desc(root.get(filter.sort)) : cb.asc(root.get(filter.sort)));
+        Order mainOrder = filter.descending
+            ? cb.desc(root.get(filter.sort)) : cb.asc(root.get(filter.sort));
+        if (filter.sort.equals("isuId")) {
+            query.orderBy(mainOrder);
+        } else {
+            query.orderBy(mainOrder, cb.asc(root.get("isuId")));
+        }
 
         TypedQuery<Student> students = em.createQuery(query);
         if (filter.paginated) {
@@ -64,10 +71,12 @@ public class StudentRepository {
         if (filter.dateFrom != null) parts.add(cb.greaterThanOrEqualTo(root.get("settlementDate"), filter.dateFrom));
         if (filter.dateTo != null) parts.add(cb.lessThanOrEqualTo(root.get("settlementDate"), filter.dateTo));
         if (filter.search != null && !filter.search.isBlank()) {
-            String term = "%" + filter.search.toLowerCase() + "%";
+            String escaped = filter.search.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            String term = "%" + escaped + "%";
             parts.add(cb.or(
-                cb.like(cb.lower(root.get("fullName")), term),
-                cb.like(root.get("isuId"), "%" + filter.search + "%")
+                cb.like(cb.lower(root.get("fullName")), term, '\\'),
+                cb.like(root.get("isuId"), term, '\\')
             ));
         }
         return parts.toArray(Predicate[]::new);

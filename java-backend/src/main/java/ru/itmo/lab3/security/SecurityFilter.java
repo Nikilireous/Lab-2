@@ -28,6 +28,7 @@ public class SecurityFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext request) {
         String path = request.getUriInfo().getPath();
+        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         String method = request.getMethod();
         if (method.equals("OPTIONS") || path.endsWith("auth/register")
                 || path.endsWith("auth/login") || path.endsWith("auth/refresh")) return;

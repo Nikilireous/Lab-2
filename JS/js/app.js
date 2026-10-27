@@ -1,6 +1,6 @@
 // ============================================
 // app.js — UI-контроллер страницы списка студентов
-// Работает с Django REST API (GET + QUERY)
+// Работает с REST API (GET + QUERY)
 // ============================================
 
 const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
@@ -64,6 +64,8 @@ async function applyFilters() {
 
     const students = await response.json();
     if (requestId !== latestRequestId) return;
+    const notice = document.getElementById('notice');
+    if (notice.classList.contains('error')) notice.hidden = true;
     renderStudents(students);
     updateStats(students);
   } catch (error) {
@@ -193,13 +195,14 @@ function handleTableClick(event) {
     return;
   }
 
-  deleteStudent(id);
+  deleteStudent(id, button);
 }
 
 /**
  * Удалить студента через API
  */
-async function deleteStudent(isuId) {
+async function deleteStudent(isuId, button) {
+  button.disabled = true;
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
 
@@ -216,6 +219,8 @@ async function deleteStudent(isuId) {
   } catch (error) {
     showNotice("Ошибка удаления: " + error.message, true);
     console.error(error);
+  } finally {
+    button.disabled = false;
   }
 }
 

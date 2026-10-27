@@ -1,6 +1,6 @@
 // ============================================
 // profile.js — логика страницы досье студента
-// Работает с Django REST API
+// Работает с REST API
 // ============================================
 
 const API_BASE_URL = `http://${location.hostname || 'localhost'}:8000/api/students/`;
@@ -135,6 +135,7 @@ async function handleDelete(studentId) {
   // Второе нажатие — удаление через API
   try {
     if (deleteTimerId) clearTimeout(deleteTimerId);
+    deleteBtn.disabled = true;
 
     const response = await fetch(`${API_BASE_URL}${encodeURIComponent(studentId)}/`, {
       method: 'DELETE'
@@ -155,6 +156,8 @@ async function handleDelete(studentId) {
     showNotice("Ошибка удаления: " + error.message, true);
     resetDeleteButton();
     console.error(error);
+  } finally {
+    deleteBtn.disabled = false;
   }
 }
 

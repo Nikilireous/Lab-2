@@ -25,6 +25,8 @@ form.addEventListener('submit', async event => {
   };
   if (registering) data.email = form.elements.namedItem('email').value.trim();
 
+  const submit = document.getElementById('auth-submit');
+  submit.disabled = true;
   try {
     const response = await fetch(api + (registering ? 'register' : 'login'), {
       method: 'POST',
@@ -43,5 +45,7 @@ form.addEventListener('submit', async event => {
   } catch (cause) {
     error.textContent = cause.message;
     error.hidden = false;
+  } finally {
+    submit.disabled = false;
   }
 });

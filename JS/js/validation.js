@@ -36,7 +36,9 @@ function isValidDate(value) {
   const day = Number(match[3]);
   const date = new Date(Date.UTC(year, month - 1, day));
   const today = new Date();
-  const maxDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, today.getDate()));
+  const lastDayNextMonth = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 2, 0)).getUTCDate();
+  const maxDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1,
+    Math.min(today.getDate(), lastDayNextMonth)));
 
   return (
     year >= 2010 &&

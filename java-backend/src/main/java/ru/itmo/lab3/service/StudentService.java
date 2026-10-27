@@ -94,7 +94,7 @@ public class StudentService {
         }
     }
 
-    public static StudentFilter parseFilter(Map<String, String> values) {
+    public StudentFilter parseFilter(Map<String, String> values) {
         StudentFilter filter = new StudentFilter();
         String fullName = values.get("fullName");
         if (fullName != null && !fullName.matches("[A-Za-zА-Яа-яЁё -]{2,120}"))

@@ -6,11 +6,13 @@ body { min-width: 240px; margin: 0; font-family: -apple-system, BlinkMacSystemFo
 
 /* Шапка */
 .header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 12px 0; }
-.header-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+.header-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .logo { font-size: 20px; font-weight: bold; color: #3498db; text-decoration: none; }
-.nav { display: flex; gap: 16px; }
+.nav { display: flex; gap: 16px; flex-shrink: 0; }
 .nav-link { color: #666; text-decoration: none; }
 .nav-link.active { color: #3498db; font-weight: 500; }
+.account-panel { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; }
+.account-name { max-width: 180px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* Уведомления */
 .notice { padding: 12px 16px; margin-bottom: 20px; border-radius: 6px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
@@ -61,6 +63,7 @@ body { min-width: 240px; margin: 0; font-family: -apple-system, BlinkMacSystemFo
 
 /* Кнопки */
 .btn { display: inline-block; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: background 0.2s; }
+.btn:disabled { opacity: 0.6; cursor: wait; }
 .btn-primary { background: #3498db; color: #fff; }
 .btn-primary:hover { background: #2980b9; }
 .btn-secondary { background: #ecf0f1; color: #2c3e50; }
@@ -129,12 +132,22 @@ body { min-width: 240px; margin: 0; font-family: -apple-system, BlinkMacSystemFo
 }
 
 @media (max-width: 480px) {
+  .page-header h1 { font-size: 24px; overflow-wrap: anywhere; }
+  .header-container { gap: 8px; }
+  .nav { gap: 8px; }
+  .nav a[href*="student-form.html"], .account-name { display: none; }
+  .account-panel .btn { padding: 8px 10px; }
   .stats { grid-template-columns: 1fr; }
+  .table-wrapper { overflow-x: hidden; }
+  .students-table, .students-table tbody { display: block; width: 100%; }
   .students-table thead { display: none; }
-  .students-table tr { display: block; margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; }
-  .students-table td { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .students-table tr { display: block; width: 100%; margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; }
+  .students-table td { display: flex; width: 100%; min-width: 0; gap: 8px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #f0f0f0; overflow-wrap: anywhere; }
   .students-table td:last-child { border-bottom: none; }
-  .students-table td::before { content: attr(data-label); font-weight: 600; margin-right: 12px; }
+  .students-table td::before { content: attr(data-label); flex: 0 0 72px; font-weight: 600; }
+  .student-cell, .student-cell > div:last-child { min-width: 0; }
+  .actions-cell { flex-wrap: wrap; }
+  .actions-cell::before { flex-basis: 100% !important; }
 }
 /* Фильтры */
 .filters {

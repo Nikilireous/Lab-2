@@ -11,9 +11,11 @@ import ru.itmo.lab3.api.ApiException;
 import ru.itmo.lab3.dto.StudentFilter;
 
 class StudentServiceTest {
+    private final StudentService service = new StudentService();
+
     @Test
     void parsesFiltersSortingAndPagination() {
-        StudentFilter filter = StudentService.parseFilter(Map.of(
+        StudentFilter filter = service.parseFilter(Map.of(
             "group", "M3301", "isForeign", "false", "dateFrom", "2025-01-01",
             "sort", "fullName", "order", "desc", "page", "2", "size", "10"
         ));
@@ -27,10 +29,10 @@ class StudentServiceTest {
 
     @Test
     void rejectsWrongDateRangeAndSort() {
-        ApiException range = assertThrows(ApiException.class, () -> StudentService.parseFilter(
+        ApiException range = assertThrows(ApiException.class, () -> service.parseFilter(
             Map.of("dateFrom", "2025-12-31", "dateTo", "2025-01-01")));
         assertEquals(422, range.getStatus());
-        assertEquals(422, assertThrows(ApiException.class, () -> StudentService.parseFilter(
+        assertEquals(422, assertThrows(ApiException.class, () -> service.parseFilter(
             Map.of("sort", "DROP TABLE students"))).getStatus());
     }
 }

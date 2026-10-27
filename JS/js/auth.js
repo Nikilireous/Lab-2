@@ -62,8 +62,9 @@
     const header = document.querySelector('.header-container');
     if (header) {
       const panel = document.createElement('div');
-      panel.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px';
+      panel.className = 'account-panel';
       const name = document.createElement('span');
+      name.className = 'account-name';
       name.textContent = `${auth.user?.username || 'Пользователь'} (${auth.user?.role || 'USER'})`;
       const logout = document.createElement('button');
       logout.type = 'button';
@@ -74,7 +75,7 @@
       header.appendChild(panel);
     }
 
-    if (auth.user?.role === 'USER') {
+    if (auth.user?.role !== 'ADMIN') {
       if (location.pathname.endsWith('student-form.html')) {
         location.replace('index.html?v=students-api-3');
         return;
