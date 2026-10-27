@@ -1,0 +1,6 @@
+target/
+.env
+.env.example
+README.md
+postman/
+scripts/

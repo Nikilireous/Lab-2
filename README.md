@@ -1,5 +1,13 @@
 # Лабораторные работы по веб-программированию
 
-В ветке `main` находится лабораторная №2: статический клиент в `JS/` и сервер Django в `django/`.
+В `JS/` находится клиент, в `django/` — сервер лабораторной №2, в `java-backend/` — сервер лабораторной №3 на Jakarta EE, Hibernate/JPA и PostgreSQL.
 
-В ветке `lab3-jakarta-postgresql` добавлен backend лабораторной №3 в `java-backend/`: Jakarta EE, Hibernate/JPA, PostgreSQL, JWT и роли USER/ADMIN. Клиент из `JS/` использует этот сервер на порту 8000. Инструкции запуска, схема API, коллекция Postman и проверка находятся в [README лабораторной №3](java-backend/README.md).
+## Запуск лабораторной №3 через Docker
+
+1. Скопируйте `.env.example` в `.env` и замените пароли и `JWT_SECRET`.
+2. Выполните `docker compose up -d --build`.
+3. Откройте [клиент](http://127.0.0.1:5500/login.html) и [Swagger UI](http://127.0.0.1:8081/). API доступен на <http://127.0.0.1:8000/api/>.
+
+При первом запуске PostgreSQL создаёт пустую базу и администратора из `.env`. Данные базы хранятся в Docker volume между запусками. Команда `docker compose down` останавливает сервисы, сохраняя данные.
+
+`bash scripts/test-docker.sh` проверяет API на **отдельной временной базе** и удаляет её после теста. Рабочая база остаётся без тестовых записей. Дополнительные сведения об API и ручном запуске WildFly есть в [README сервера](java-backend/README.md).
