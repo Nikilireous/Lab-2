@@ -105,8 +105,8 @@ def main():
         expect(422, "GET", "students/?room=abc", token=reader_token)
         expect(401, "GET", "students/")
         refreshed, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
-        expect(401, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
-        assert refreshed["accessToken"]
+        repeated, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
+        assert set(refreshed) == {"accessToken"} and repeated["accessToken"]
         current, _ = expect(200, "GET", "auth/me", token=reader_token)
         assert current["role"] == "USER"
         _, cors = expect(200, "OPTIONS", "students/", headers={

@@ -7,6 +7,7 @@ import java.util.Locale;
 import org.mindrot.jbcrypt.BCrypt;
 import ru.itmo.lab3.api.ApiException;
 import ru.itmo.lab3.dto.AuthResponse;
+import ru.itmo.lab3.dto.AccessTokenResponse;
 import ru.itmo.lab3.dto.LoginRequest;
 import ru.itmo.lab3.dto.RefreshRequest;
 import ru.itmo.lab3.dto.RegisterRequest;
@@ -56,15 +57,15 @@ public class AuthService {
         return issue(user);
     }
 
-    public AuthResponse refresh(RefreshRequest request) {
+    public AccessTokenResponse refresh(RefreshRequest request) {
         if (request == null || request.refreshToken == null)
             throw new ApiException(422, "refreshToken", "Токен обновления обязателен.");
         String username = jwt.subject(request.refreshToken, "refresh");
         UserAccount user = users.findByUsername(username);
         if (user == null) throw new ApiException(401, "detail", "Пользователь не найден.");
-        if (!refreshTokens.consume(request.refreshToken, user))
-            throw new ApiException(401, "refreshToken", "Токен обновления не найден, использован или истёк.");
-        return issue(user);
+        if (!refreshTokens.isValid(request.refreshToken, user))
+            throw new ApiException(401, "refreshToken", "Токен обновления не найден или истёк.");
+        return new AccessTokenResponse(jwt.accessToken(user));
     }
 
     private AuthResponse issue(UserAccount user) {

@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import ru.itmo.lab3.dto.AuthResponse;
+import ru.itmo.lab3.dto.AccessTokenResponse;
 import ru.itmo.lab3.dto.LoginRequest;
 import ru.itmo.lab3.dto.RefreshRequest;
 import ru.itmo.lab3.dto.RegisterRequest;
@@ -41,7 +42,7 @@ public class AuthResource {
     @POST
     @Path("/refresh")
     @Consumes(MediaType.APPLICATION_JSON)
-    public AuthResponse refresh(RefreshRequest request) {
+    public AccessTokenResponse refresh(RefreshRequest request) {
         return service.refresh(request);
     }
 

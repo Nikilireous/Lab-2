@@ -36,6 +36,11 @@ components:
         accessToken: { type: string }
         refreshToken: { type: string }
         user: { $ref: '#/components/schemas/User' }
+    AccessToken:
+      type: object
+      required: [accessToken]
+      properties:
+        accessToken: { type: string }
     Error:
       type: object
       properties:
@@ -104,7 +109,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/refresh:
     post:
-      summary: Выдать новую пару токенов
+      summary: Выдать новый access-токен
       requestBody:
         required: true
         content:
@@ -116,10 +121,10 @@ paths:
                 refreshToken: { type: string }
       responses:
         '200':
-          description: Новая пара JWT
+          description: Только новый access-токен
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Auth' }
+              schema: { $ref: '#/components/schemas/AccessToken' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/me:
     get:

@@ -45,7 +45,8 @@
       return response;
     }
 
-    auth = await refreshed.json();
+    const { accessToken } = await refreshed.json();
+    auth = { ...auth, accessToken };
     localStorage.setItem(storageKey, JSON.stringify(auth));
     response = await send(auth.accessToken);
     if (response.status === 401) loginPage();

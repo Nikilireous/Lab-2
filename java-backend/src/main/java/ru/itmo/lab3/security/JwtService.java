@@ -37,10 +37,14 @@ public class JwtService {
 
     public AuthResponse issue(UserAccount user) {
         return new AuthResponse(
-            token(user, "access", Instant.now().plus(accessMinutes, ChronoUnit.MINUTES)),
+            accessToken(user),
             token(user, "refresh", Instant.now().plus(refreshDays, ChronoUnit.DAYS)),
             UserDto.from(user)
         );
+    }
+
+    public String accessToken(UserAccount user) {
+        return token(user, "access", Instant.now().plus(accessMinutes, ChronoUnit.MINUTES));
     }
 
     private String token(UserAccount user, String type, Instant expires) {

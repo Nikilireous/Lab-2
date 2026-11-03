@@ -25,12 +25,10 @@ public class RefreshTokenRepository {
         em.persist(new RefreshToken(hash(token), user, expiresAt));
     }
 
-    public boolean consume(String token, UserAccount user) {
+    public boolean isValid(String token, UserAccount user) {
         RefreshToken saved = em.find(RefreshToken.class, hash(token));
-        if (saved == null || !saved.getUser().getId().equals(user.getId())
-                || !saved.getExpiresAt().isAfter(Instant.now())) return false;
-        em.remove(saved);
-        return true;
+        return saved != null && saved.getUser().getId().equals(user.getId())
+            && saved.getExpiresAt().isAfter(Instant.now());
     }
 
     private static String hash(String token) {

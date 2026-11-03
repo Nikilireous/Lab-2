@@ -56,7 +56,7 @@
     {
       "name": "11. Обновить JWT",
       "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"refreshToken\":\"{{refreshToken}}\"}"}, "url": "{{baseUrl}}/auth/refresh"},
-      "event": [{"listen": "test", "script": {"exec": ["if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('accessToken', data.accessToken); pm.collectionVariables.set('refreshToken', data.refreshToken); }"]}}]
+      "event": [{"listen": "test", "script": {"exec": ["if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('accessToken', data.accessToken); }"]}}]
     },
     {
       "name": "12. Удалить студента",
