@@ -72,14 +72,14 @@ public class StudentResource {
     @Path("/{isuId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public StudentDto replace(@PathParam("isuId") String isuId, StudentDto input) {
-        return StudentDto.from(service.update(isuId, input, true));
+        return StudentDto.from(service.replace(isuId, input));
     }
 
     @PATCH
     @Path("/{isuId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public StudentDto patch(@PathParam("isuId") String isuId, StudentDto input) {
-        return StudentDto.from(service.update(isuId, input, false));
+        return StudentDto.from(service.patch(isuId, input));
     }
 
     @DELETE

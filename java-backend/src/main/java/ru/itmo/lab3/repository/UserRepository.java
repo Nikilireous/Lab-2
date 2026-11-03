@@ -3,6 +3,9 @@ package ru.itmo.lab3.repository;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import java.util.List;
 import ru.itmo.lab3.model.UserAccount;
 
@@ -12,18 +15,19 @@ public class UserRepository {
     private EntityManager em;
 
     public UserAccount findByUsername(String username) {
-        List<UserAccount> users = em.createQuery(
-                "SELECT u FROM UserAccount u WHERE u.username = :username", UserAccount.class)
-            .setParameter("username", username)
-            .getResultList();
-        return users.isEmpty() ? null : users.get(0);
+        return findBy("username", username);
     }
 
     public UserAccount findByEmail(String email) {
-        List<UserAccount> users = em.createQuery(
-                "SELECT u FROM UserAccount u WHERE u.email = :email", UserAccount.class)
-            .setParameter("email", email)
-            .getResultList();
+        return findBy("email", email);
+    }
+
+    private UserAccount findBy(String field, String value) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<UserAccount> query = cb.createQuery(UserAccount.class);
+        Root<UserAccount> user = query.from(UserAccount.class);
+        query.where(cb.equal(user.get(field), value));
+        List<UserAccount> users = em.createQuery(query).getResultList();
         return users.isEmpty() ? null : users.get(0);
     }
 

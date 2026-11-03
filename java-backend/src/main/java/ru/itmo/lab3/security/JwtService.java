@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import ru.itmo.lab3.api.ApiException;
 import ru.itmo.lab3.dto.AuthResponse;
@@ -45,6 +46,7 @@ public class JwtService {
     private String token(UserAccount user, String type, Instant expires) {
         return Jwts.builder()
             .subject(user.getUsername())
+            .id(UUID.randomUUID().toString())
             .claim("type", type)
             .issuedAt(new Date())
             .expiration(Date.from(expires))
@@ -61,5 +63,10 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException error) {
             throw new ApiException(401, "detail", "Недействительный или истёкший токен.");
         }
+    }
+
+    public Instant expiresAt(String token) {
+        return Jwts.parser().verifyWith(key).build()
+            .parseSignedClaims(token).getPayload().getExpiration().toInstant();
     }
 }

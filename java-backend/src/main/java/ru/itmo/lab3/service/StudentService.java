@@ -41,7 +41,15 @@ public class StudentService {
         return student;
     }
 
-    public Student update(String isuId, StudentDto input, boolean full) {
+    public Student replace(String isuId, StudentDto input) {
+        return change(isuId, input, true);
+    }
+
+    public Student patch(String isuId, StudentDto input) {
+        return change(isuId, input, false);
+    }
+
+    private Student change(String isuId, StudentDto input, boolean full) {
         if (input == null) throw new ApiException(422, "detail", "Тело запроса обязательно.");
         Student student = find(isuId);
         if (input.isuId != null && !input.isuId.equals(isuId))
@@ -82,8 +90,10 @@ public class StudentService {
         }
         if (input.settlementDate != null) {
             LocalDate date = parseDate("settlementDate", input.settlementDate);
-            if (date.isBefore(LocalDate.of(2010, 1, 1)) || date.isAfter(LocalDate.now().plusMonths(1)))
-                throw new ApiException(422, "settlementDate", "Дата заселения вне допустимого периода.");
+            LocalDate earliest = LocalDate.of(2010, 1, 1);
+            LocalDate latest = LocalDate.now().plusMonths(1);
+            if (date.isBefore(earliest) || date.isAfter(latest))
+                throw new ApiException(422, "settlementDate", "Укажите дату с " + earliest + " по " + latest + ".");
             student.setSettlementDate(date);
         }
         if (input.isForeign != null) student.setForeign(input.isForeign);
@@ -120,7 +130,8 @@ public class StudentService {
         filter.dateFrom = optionalDate("dateFrom", values.get("dateFrom"));
         filter.dateTo = optionalDate("dateTo", values.get("dateTo"));
         if (filter.dateFrom != null && filter.dateTo != null && filter.dateFrom.isAfter(filter.dateTo))
-            throw new ApiException(422, "dateTo", "Конец периода раньше начала.");
+            throw new ApiException(422, "dateTo", "Конец периода " + filter.dateTo
+                + " раньше начала " + filter.dateFrom + ".");
         filter.search = values.get("search");
         if (filter.search != null && filter.search.length() > 120)
             throw new ApiException(422, "search", "Максимум 120 символов.");

@@ -13,6 +13,7 @@ import ru.itmo.lab3.dto.RegisterRequest;
 import ru.itmo.lab3.model.Role;
 import ru.itmo.lab3.model.UserAccount;
 import ru.itmo.lab3.repository.UserRepository;
+import ru.itmo.lab3.repository.RefreshTokenRepository;
 import ru.itmo.lab3.security.JwtService;
 
 @Stateless
@@ -22,6 +23,9 @@ public class AuthService {
 
     @Inject
     private JwtService jwt;
+
+    @Inject
+    private RefreshTokenRepository refreshTokens;
 
     public AuthResponse register(RegisterRequest request) {
         if (request == null) throw new ApiException(422, "detail", "Тело запроса обязательно.");
@@ -39,7 +43,7 @@ public class AuthService {
         user.setPasswordHash(BCrypt.hashpw(request.password, BCrypt.gensalt(12)));
         user.setRole(Role.USER);
         users.save(user);
-        return jwt.issue(user);
+        return issue(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -49,7 +53,7 @@ public class AuthService {
         UserAccount user = name.contains("@") ? users.findByEmail(name) : users.findByUsername(name);
         if (user == null || !BCrypt.checkpw(request.password, user.getPasswordHash()))
             throw new ApiException(401, "detail", "Неверное имя пользователя или пароль.");
-        return jwt.issue(user);
+        return issue(user);
     }
 
     public AuthResponse refresh(RefreshRequest request) {
@@ -58,7 +62,15 @@ public class AuthService {
         String username = jwt.subject(request.refreshToken, "refresh");
         UserAccount user = users.findByUsername(username);
         if (user == null) throw new ApiException(401, "detail", "Пользователь не найден.");
-        return jwt.issue(user);
+        if (!refreshTokens.consume(request.refreshToken, user))
+            throw new ApiException(401, "refreshToken", "Токен обновления не найден, использован или истёк.");
+        return issue(user);
+    }
+
+    private AuthResponse issue(UserAccount user) {
+        AuthResponse response = jwt.issue(user);
+        refreshTokens.save(response.refreshToken, user, jwt.expiresAt(response.refreshToken));
+        return response;
     }
 
     public UserAccount currentUser(String username) {

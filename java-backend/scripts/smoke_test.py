@@ -105,6 +105,7 @@ def main():
         expect(422, "GET", "students/?room=abc", token=reader_token)
         expect(401, "GET", "students/")
         refreshed, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
+        expect(401, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
         assert refreshed["accessToken"]
         current, _ = expect(200, "GET", "auth/me", token=reader_token)
         assert current["role"] == "USER"

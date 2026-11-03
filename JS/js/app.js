@@ -163,9 +163,9 @@ function createStudentRow(student) {
     <td class="student-room" data-label="Комната">${escapeHtml(student.room)}</td>
     <td class="student-date" data-label="Срок заселения">${escapeHtml(formatDate(student.settlementDate))}</td>
     <td class="actions-cell" data-label="Действия">
-      <a href="${profileUrl}" class="btn-icon" title="Просмотр">👁</a>
-      <a href="${editUrl}" class="btn-icon" title="Редактировать">✎</a>
-      <button class="btn-icon action-delete" title="Удалить">⌫</button>
+      <a href="${profileUrl}" class="btn-icon" title="Просмотр">Открыть</a>
+      <a href="${editUrl}" class="btn-icon" title="Редактировать">Изменить</a>
+      <button class="btn-icon action-delete" title="Удалить">Удалить</button>
     </td>
   `;
 
@@ -230,7 +230,7 @@ async function deleteStudent(isuId, button) {
 function resetDeleteButton(button) {
   if (!(button instanceof HTMLButtonElement)) return;
   button.dataset.confirm = "";
-  button.textContent = "⌫";
+  button.textContent = "Удалить";
   button.classList.remove("confirming");
 }
 
