@@ -1,0 +1,28 @@
+<section class="page-head">
+  <p class="eyebrow">Аккаунт</p>
+  <h1>Мой профиль</h1>
+</section>
+<div class="panel profile-panel">
+  @if (loading()) {
+    <p class="muted">Загружаем профиль…</p>
+  }
+  @if (error()) {
+    <p class="alert" role="alert">{{ error() }}</p>
+  }
+  @if (auth.user(); as user) {
+    <dl class="facts">
+      <div>
+        <dt>Имя пользователя</dt>
+        <dd>{{ user.username }}</dd>
+      </div>
+      <div>
+        <dt>Почта</dt>
+        <dd>{{ user.email }}</dd>
+      </div>
+      <div>
+        <dt>Роль</dt>
+        <dd>{{ user.role === 'ADMIN' ? 'Администратор' : 'Пользователь' }}</dd>
+      </div>
+    </dl>
+  }
+</div>

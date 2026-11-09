@@ -1,0 +1,65 @@
+<a class="back-link" routerLink="/students">← К списку</a>
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Учёт общежития</p>
+    <h1>{{ id ? 'Редактирование' : 'Новый студент' }}</h1>
+  </div>
+</section>
+@if (loading()) {
+  <div class="panel">Загружаем данные…</div>
+}
+@if (error() && id && !loaded()) {
+  <div class="alert" role="alert">{{ error() }}</div>
+}
+@if (!loading() && (!id || loaded())) {
+  <form class="panel student-form" [formGroup]="form" (ngSubmit)="save()">
+    <div class="form-grid">
+      <label class="wide"
+        >ФИО<input
+          formControlName="fullName"
+          placeholder="Иванов Иван Иванович"
+          maxlength="120"
+          required
+      /></label>
+      <label
+        >Группа<input formControlName="group" placeholder="P3212" maxlength="5" required
+      /></label>
+      <label
+        >ИСУ ID<input
+          formControlName="isuId"
+          inputmode="numeric"
+          maxlength="6"
+          [readOnly]="!!id"
+          required
+      /></label>
+      <label
+        >Общежитие<input type="number" formControlName="dormitory" min="1" max="20" required
+      /></label>
+      <label
+        >Комната<input type="number" formControlName="room" min="100" max="599" required
+      /></label>
+      <label>Дата заселения<input type="date" formControlName="settlementDate" required /></label>
+      <label
+        >Статус<select formControlName="isForeign">
+          <option [ngValue]="false">Студент РФ</option>
+          <option [ngValue]="true">Иностранный студент</option>
+        </select></label
+      >
+      <label class="wide"
+        >Примечания<textarea formControlName="notes" maxlength="500" rows="4"></textarea>
+      </label>
+    </div>
+    @if (form.invalid && form.touched) {
+      <p class="alert">Проверьте ФИО, группу, ИСУ ID, комнату и остальные обязательные поля.</p>
+    }
+    @if (error()) {
+      <p class="alert" role="alert">{{ error() }}</p>
+    }
+    <div class="form-actions">
+      <button class="button primary" type="submit" [disabled]="saving()">
+        {{ saving() ? 'Сохраняем…' : 'Сохранить' }}
+      </button>
+      <a class="button subtle" routerLink="/students">Отмена</a>
+    </div>
+  </form>
+}

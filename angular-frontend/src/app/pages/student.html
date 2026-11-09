@@ -1,0 +1,56 @@
+<a class="back-link" routerLink="/students">← К списку</a>
+@if (loading()) {
+  <div class="panel"><p class="muted">Загружаем карточку…</p></div>
+}
+@if (error()) {
+  <div class="alert" role="alert">{{ error() }}</div>
+}
+@if (student(); as s) {
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Карточка студента · {{ s.isuId }}</p>
+      <h1>{{ s.fullName }}</h1>
+      <p class="muted">{{ s.group }}</p>
+    </div>
+    @if (auth.isAdmin()) {
+      <div class="row-actions">
+        <a class="button primary" [routerLink]="['/students', s.isuId, 'edit']">Изменить</a>
+        <button type="button" class="button danger" [disabled]="deleting()" (click)="remove()">
+          {{ deleting() ? 'Удаляем…' : 'Удалить' }}
+        </button>
+      </div>
+    }
+  </section>
+  <div class="panel profile-panel">
+    <dl class="facts">
+      <div>
+        <dt>ИСУ ID</dt>
+        <dd>{{ s.isuId }}</dd>
+      </div>
+      <div>
+        <dt>Группа</dt>
+        <dd>{{ s.group }}</dd>
+      </div>
+      <div>
+        <dt>Общежитие</dt>
+        <dd>№{{ s.dormitory }}</dd>
+      </div>
+      <div>
+        <dt>Комната</dt>
+        <dd>{{ s.room }}</dd>
+      </div>
+      <div>
+        <dt>Дата заселения</dt>
+        <dd>{{ s.settlementDate }}</dd>
+      </div>
+      <div>
+        <dt>Статус</dt>
+        <dd>{{ s.isForeign ? 'Иностранный студент' : 'Студент РФ' }}</dd>
+      </div>
+    </dl>
+    @if (s.notes) {
+      <h2>Примечания</h2>
+      <p class="notes">{{ s.notes }}</p>
+    }
+  </div>
+}

@@ -1,0 +1,17 @@
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" routerLink="/students">Студенты <span>· общежитие</span></a>
+    <nav aria-label="Основная навигация">
+      @if (auth.user()) {
+        <a routerLink="/students" routerLinkActive="active">Список</a>
+        @if (auth.isAdmin()) { <a routerLink="/students/new" routerLinkActive="active">Добавить</a> }
+        <a routerLink="/profile" routerLinkActive="active">{{ auth.user()?.username }}</a>
+        <button type="button" class="nav-button" (click)="auth.logout()">Выйти</button>
+      } @else {
+        <a routerLink="/login" routerLinkActive="active">Вход</a>
+        <a routerLink="/register" routerLinkActive="active">Регистрация</a>
+      }
+    </nav>
+  </div>
+</header>
+<main class="wrap"><router-outlet /></main>

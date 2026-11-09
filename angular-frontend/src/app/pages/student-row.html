@@ -1,0 +1,24 @@
+<td data-label="Студент">
+  <a class="student-link" [routerLink]="['/students', student.isuId]">{{ student.fullName }}</a>
+</td>
+<td data-label="Группа">{{ student.group }}</td>
+<td data-label="ИСУ ID">{{ student.isuId }}</td>
+<td data-label="Общежитие">№{{ student.dormitory }}</td>
+<td data-label="Комната">{{ student.room }}</td>
+<td data-label="Дата">{{ student.settlementDate }}</td>
+<td data-label="Действия">
+  <div class="row-actions">
+    <a class="button small" [routerLink]="['/students', student.isuId]">Открыть</a>
+    @if (auth.isAdmin()) {
+      <a class="button small" [routerLink]="['/students', student.isuId, 'edit']">Изменить</a>
+      <button
+        type="button"
+        class="button small danger"
+        [disabled]="isDeleting"
+        (click)="deleteRequested.emit(student)"
+      >
+        {{ isDeleting ? 'Удаляем…' : 'Удалить' }}
+      </button>
+    }
+  </div>
+</td>
