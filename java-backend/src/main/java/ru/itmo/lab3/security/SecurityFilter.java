@@ -31,7 +31,8 @@ public class SecurityFilter implements ContainerRequestFilter {
         if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         String method = request.getMethod();
         if (method.equals("OPTIONS") || path.endsWith("auth/register")
-                || path.endsWith("auth/login") || path.endsWith("auth/refresh")) return;
+                || path.endsWith("auth/login") || path.endsWith("auth/refresh")
+                || path.endsWith("auth/logout")) return;
 
         try {
             String header = request.getHeaderString("Authorization");

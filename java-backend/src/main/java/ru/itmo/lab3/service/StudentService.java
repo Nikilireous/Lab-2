@@ -135,6 +135,9 @@ public class StudentService {
         filter.search = values.get("search");
         if (filter.search != null && filter.search.length() > 120)
             throw new ApiException(422, "search", "Максимум 120 символов.");
+        filter.notes = values.get("notes");
+        if (filter.notes != null && filter.notes.length() > 500)
+            throw new ApiException(422, "notes", "Максимум 500 символов.");
 
         String sort = values.getOrDefault("sort", "isuId");
         if (!Set.of("fullName", "group", "isuId", "dormitory", "room", "settlementDate", "isForeign").contains(sort))

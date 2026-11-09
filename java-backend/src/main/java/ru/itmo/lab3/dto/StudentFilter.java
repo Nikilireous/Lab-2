@@ -13,6 +13,7 @@ public class StudentFilter {
     public LocalDate dateFrom;
     public LocalDate dateTo;
     public String search;
+    public String notes;
     public String sort = "isuId";
     public boolean descending;
     public int page = 1;

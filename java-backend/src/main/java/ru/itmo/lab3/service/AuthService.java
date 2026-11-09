@@ -68,6 +68,13 @@ public class AuthService {
         return new AccessTokenResponse(jwt.accessToken(user));
     }
 
+    public void logout(RefreshRequest request) {
+        if (request == null || request.refreshToken == null)
+            throw new ApiException(422, "refreshToken", "Токен обновления обязателен.");
+        jwt.subject(request.refreshToken, "refresh");
+        refreshTokens.delete(request.refreshToken);
+    }
+
     private AuthResponse issue(UserAccount user) {
         AuthResponse response = jwt.issue(user);
         refreshTokens.save(response.refreshToken, user, jwt.expiresAt(response.refreshToken));

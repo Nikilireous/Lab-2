@@ -70,13 +70,20 @@ public class StudentRepository {
         if (filter.settlementDate != null) parts.add(cb.equal(root.get("settlementDate"), filter.settlementDate));
         if (filter.dateFrom != null) parts.add(cb.greaterThanOrEqualTo(root.get("settlementDate"), filter.dateFrom));
         if (filter.dateTo != null) parts.add(cb.lessThanOrEqualTo(root.get("settlementDate"), filter.dateTo));
+        if (filter.notes != null && !filter.notes.isBlank()) {
+            String notes = filter.notes.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            parts.add(cb.like(cb.lower(root.get("notes")), "%" + notes + "%", '\\'));
+        }
         if (filter.search != null && !filter.search.isBlank()) {
             String escaped = filter.search.toLowerCase(Locale.ROOT)
                 .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             String term = "%" + escaped + "%";
             parts.add(cb.or(
                 cb.like(cb.lower(root.get("fullName")), term, '\\'),
-                cb.like(root.get("isuId"), term, '\\')
+                cb.like(root.get("isuId"), term, '\\'),
+                cb.like(cb.lower(root.get("group")), term, '\\'),
+                cb.like(cb.lower(root.get("notes")), term, '\\')
             ));
         }
         return parts.toArray(Predicate[]::new);

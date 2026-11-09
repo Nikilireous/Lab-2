@@ -31,6 +31,11 @@ public class RefreshTokenRepository {
             && saved.getExpiresAt().isAfter(Instant.now());
     }
 
+    public void delete(String token) {
+        RefreshToken saved = em.find(RefreshToken.class, hash(token));
+        if (saved != null) em.remove(saved);
+    }
+
     private static String hash(String token) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")

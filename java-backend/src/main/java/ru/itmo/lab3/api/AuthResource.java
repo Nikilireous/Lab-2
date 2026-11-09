@@ -46,6 +46,14 @@ public class AuthResource {
         return service.refresh(request);
     }
 
+    @POST
+    @Path("/logout")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response logout(RefreshRequest request) {
+        service.logout(request);
+        return Response.noContent().build();
+    }
+
     @GET
     @Path("/me")
     public UserDto me(@Context SecurityContext security) {

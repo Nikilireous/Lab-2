@@ -126,6 +126,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AccessToken' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      summary: Завершить сеанс и отозвать refresh-токен
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '204': { description: Сеанс завершён }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/me:
     get:
       summary: Текущий пользователь
@@ -152,6 +167,7 @@ paths:
         - { in: query, name: dateFrom, schema: { type: string, format: date } }
         - { in: query, name: dateTo, schema: { type: string, format: date } }
         - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: notes, schema: { type: string, maxLength: 500 } }
         - { in: query, name: sort, schema: { type: string, enum: [fullName, group, isuId, dormitory, room, settlementDate, isForeign] } }
         - { in: query, name: order, schema: { type: string, enum: [asc, desc] } }
         - { in: query, name: page, schema: { type: integer, minimum: 1 } }

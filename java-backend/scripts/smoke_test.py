@@ -84,6 +84,8 @@ def main():
         listing, headers = expect(200, "GET", "students/?group=P3212&sort=fullName&order=desc&page=1&size=5", token=reader_token)
         assert any(item["isuId"] == student_id for item in listing)
         assert int(headers["X-Total-Count"]) >= 1
+        by_notes, _ = expect(200, "GET", "students/?notes=%D0%A2%D0%B5%D1%81%D1%82", token=reader_token)
+        assert any(item["isuId"] == student_id for item in by_notes)
         queried, _ = expect(200, "QUERY", "students/", {
             "group": "P3212", "dormitory": 7, "isForeign": False,
         }, reader_token)
@@ -109,6 +111,8 @@ def main():
         assert set(refreshed) == {"accessToken"} and repeated["accessToken"]
         current, _ = expect(200, "GET", "auth/me", token=reader_token)
         assert current["role"] == "USER"
+        expect(204, "POST", "auth/logout", {"refreshToken": reader["refreshToken"]})
+        expect(401, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
         _, cors = expect(200, "OPTIONS", "students/", headers={
             "Origin": "http://127.0.0.1:5500", "Access-Control-Request-Method": "QUERY",
             "Access-Control-Request-Headers": "authorization,content-type",
