@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
-import { debounceTime, filter, fromEvent, map, merge } from 'rxjs';
+import { debounceTime, filter, fromEvent, interval, map, merge } from 'rxjs';
 
 const KEY = 'lab4-students-changed';
 
 @Injectable({ providedIn: 'root' })
 export class StudentChanges {
   readonly changes$ = merge(
+    interval(3000),
     fromEvent<StorageEvent>(window, 'storage').pipe(
       filter((event) => event.key === KEY),
       map(() => undefined),

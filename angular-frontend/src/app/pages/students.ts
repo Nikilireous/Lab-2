@@ -48,9 +48,9 @@ export class StudentsPage implements OnInit {
   readonly error = signal('');
   readonly deleting = signal<string | null>(null);
   readonly pages = () => Math.max(1, Math.ceil(this.total() / this.size()));
-  private reload$ = new BehaviorSubject(0);
+  private reload$ = new BehaviorSubject(false);
   ngOnInit(): void {
-    this.changes.changes$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => this.reload());
+    this.changes.changes$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => this.reload(true));
     this.form.valueChanges
       .pipe(
         debounceTime(250),
@@ -63,12 +63,13 @@ export class StudentsPage implements OnInit {
         this.reload();
       });
     const queries = this.reload$.pipe(
-      map(() => ({
+      map((silent) => ({
         filters: this.form.getRawValue() as Filters,
         sort: this.sort(),
         order: this.order(),
         page: this.page(),
         size: this.size(),
+        silent,
       })),
     );
     this.search
@@ -88,8 +89,8 @@ export class StudentsPage implements OnInit {
         }
       });
   }
-  reload(): void {
-    this.reload$.next(this.reload$.value + 1);
+  reload(silent = false): void {
+    this.reload$.next(silent);
   }
   reset(): void {
     this.form.reset();

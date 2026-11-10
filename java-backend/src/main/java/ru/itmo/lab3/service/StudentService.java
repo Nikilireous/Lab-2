@@ -80,12 +80,14 @@ public class StudentService {
         }
         if (input.dormitory != null) {
             if (input.dormitory < 1 || input.dormitory > 20)
-                throw new ApiException(422, "dormitory", "Общежитие указано неверно: введите номер от 1 до 20.");
+                throw new ApiException(422, "dormitory", "Общежитие «" + input.dormitory
+                    + "» указано неверно: введите номер от 1 до 20.");
             student.setDormitory(input.dormitory);
         }
         if (input.room != null) {
             if (input.room < 100 || input.room > 599)
-                throw new ApiException(422, "room", "Комната указана неверно: введите номер от 100 до 599.");
+                throw new ApiException(422, "room", "Комната «" + input.room
+                    + "» указана неверно: введите номер от 100 до 599.");
             student.setRoom(input.room);
         }
         if (input.settlementDate != null) {
@@ -164,7 +166,8 @@ public class StudentService {
         } catch (NumberFormatException ignored) {
             // Возвращаем одинаковую ошибку для текста и числа вне диапазона.
         }
-        throw new ApiException(422, field, label + ": введите число от "
+        String shown = raw.length() > 20 ? raw.substring(0, 20) + "…" : raw;
+        throw new ApiException(422, field, label + " (получено «" + shown + "»): введите число от "
             + min + " до " + max + ".");
     }
 

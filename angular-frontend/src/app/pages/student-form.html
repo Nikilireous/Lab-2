@@ -19,26 +19,44 @@
           formControlName="fullName"
           placeholder="Иванов Иван Иванович"
           maxlength="120"
+          [attr.aria-invalid]="!!fieldError('fullName')"
           required
-      /></label>
+      />
+      @if (fieldError('fullName')) { <small class="field-error">{{ fieldError('fullName') }}</small> }
+      </label>
       <label
-        >Группа<input formControlName="group" placeholder="P3212" maxlength="5" required
-      /></label>
+        >Группа<input formControlName="group" placeholder="P3212" maxlength="5"
+          [attr.aria-invalid]="!!fieldError('group')" required
+      />
+      @if (fieldError('group')) { <small class="field-error">{{ fieldError('group') }}</small> }
+      </label>
       <label
         >ИСУ ID<input
           formControlName="isuId"
           inputmode="numeric"
           maxlength="6"
           [readOnly]="!!id"
+          [attr.aria-invalid]="!!fieldError('isuId')"
           required
-      /></label>
+      />
+      @if (fieldError('isuId')) { <small class="field-error">{{ fieldError('isuId') }}</small> }
+      </label>
       <label
-        >Общежитие<input type="number" formControlName="dormitory" min="1" max="20" required
-      /></label>
+        >Общежитие<input type="number" formControlName="dormitory" min="1" max="20"
+          [attr.aria-invalid]="!!fieldError('dormitory')" required
+      />
+      @if (fieldError('dormitory')) { <small class="field-error">{{ fieldError('dormitory') }}</small> }
+      </label>
       <label
-        >Комната<input type="number" formControlName="room" min="100" max="599" required
-      /></label>
-      <label>Дата заселения<input type="date" formControlName="settlementDate" required /></label>
+        >Комната<input type="number" formControlName="room" min="100" max="599"
+          [attr.aria-invalid]="!!fieldError('room')" required
+      />
+      @if (fieldError('room')) { <small class="field-error">{{ fieldError('room') }}</small> }
+      </label>
+      <label>Дата заселения<input type="date" formControlName="settlementDate"
+        [attr.aria-invalid]="!!fieldError('settlementDate')" required />
+        @if (fieldError('settlementDate')) { <small class="field-error">{{ fieldError('settlementDate') }}</small> }
+      </label>
       <label
         >Статус<select formControlName="isForeign">
           <option [ngValue]="false">Студент РФ</option>
@@ -46,11 +64,13 @@
         </select></label
       >
       <label class="wide"
-        >Примечания<textarea formControlName="notes" maxlength="500" rows="4"></textarea>
+        >Примечания<textarea formControlName="notes" maxlength="500" rows="4"
+          [attr.aria-invalid]="!!fieldError('notes')"></textarea>
+        @if (fieldError('notes')) { <small class="field-error">{{ fieldError('notes') }}</small> }
       </label>
     </div>
     @if (form.invalid && form.touched) {
-      <p class="alert">{{ validationMessage() }}</p>
+      <p class="alert" role="alert">Исправьте поля: {{ validationMessage() }}</p>
     }
     @if (error()) {
       <p class="alert" role="alert">{{ error() }}</p>

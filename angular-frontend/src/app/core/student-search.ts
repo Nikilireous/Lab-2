@@ -10,6 +10,7 @@ export interface SearchQuery {
   order: string;
   page: number;
   size: number;
+  silent?: boolean;
 }
 export type SearchState =
   { loading: true } | { loading: false; data: StudentPage } | { loading: false; error: string };
@@ -28,14 +29,14 @@ export class StudentSearch {
         ) {
           return of({
             loading: false,
-            error: 'Конец периода не может быть раньше начала.',
+            error: `Период дат: конец ${query.filters.dateTo} раньше начала ${query.filters.dateFrom}.`,
           } as SearchState);
         }
-        return this.api.list(query.filters, query.sort, query.order, query.page, query.size).pipe(
+        const results = this.api.list(query.filters, query.sort, query.order, query.page, query.size).pipe(
           map((data) => ({ loading: false, data }) as SearchState),
-          startWith({ loading: true } as SearchState),
           catchError((error) => of({ loading: false, error: errorMessage(error) } as SearchState)),
         );
+        return query.silent ? results : results.pipe(startWith({ loading: true } as SearchState));
       }),
     );
   }
