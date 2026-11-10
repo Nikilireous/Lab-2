@@ -1,0 +1,17 @@
+.list-panel { overflow: hidden; }
+.list-heading { padding: 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #e2e7ea; }
+.list-heading h2 { font-size: 17px; margin: 0; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f6f8f9; text-align: left; color: #516274; font-weight: 600; }
+th { padding: 12px; border-bottom: 1px solid #e8ecef; vertical-align: middle; }
+.empty { padding: 35px; text-align: center; color: #73808b; }
+.pager { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #e8ecef; font-size: 13px; }
+.pager label { flex-direction: row; align-items: center; }
+.pager select { width: auto; }
+.pager > div { display: flex; gap: 6px; }
+@media (max-width: 600px) {
+  .table-scroll { overflow: visible; }
+  table, thead, tbody { display: block; width: 100%; }
+  thead { display: none; }
+}

@@ -1,0 +1,8 @@
+.profile-panel { padding: 24px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.facts div { background: #f6f8f9; padding: 14px; border-radius: 4px; }
+.facts dt { color: #7b8792; font-size: 12px; }
+.facts dd { margin: 6px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.profile-panel h2 { font-size: 17px; margin-top: 28px; }
+@media (max-width: 900px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .facts { grid-template-columns: 1fr; } }

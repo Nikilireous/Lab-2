@@ -10,6 +10,7 @@ import { StudentsApi } from '../core/students';
   selector: 'app-student-form',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './student-form.html',
+  styleUrl: './student-form.css',
 })
 export class StudentFormPage implements OnInit {
   private fb = inject(FormBuilder);
@@ -31,6 +32,19 @@ export class StudentFormPage implements OnInit {
   readonly loaded = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
+  validationMessage(): string {
+    const messages: string[] = [];
+    if (this.form.controls.dormitory.invalid)
+      messages.push('Общежитие указано неверно: введите номер от 1 до 20.');
+    if (this.form.controls.room.invalid)
+      messages.push('Комната указана неверно: введите номер от 100 до 599.');
+    if (this.form.controls.fullName.invalid) messages.push('Проверьте ФИО.');
+    if (this.form.controls.group.invalid) messages.push('Проверьте группу.');
+    if (this.form.controls.isuId.invalid) messages.push('ИСУ ID должен содержать 6 цифр.');
+    if (this.form.controls.settlementDate.invalid) messages.push('Укажите дату заселения.');
+    if (this.form.controls.notes.invalid) messages.push('Примечания: максимум 500 символов.');
+    return messages.join(' ');
+  }
   ngOnInit(): void {
     if (!this.id) return;
     this.api.get(this.id).subscribe({

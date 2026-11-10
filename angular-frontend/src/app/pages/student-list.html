@@ -1,0 +1,48 @@
+@if (error) {
+  <div class="alert" role="alert">
+    {{ error }}
+    <button type="button" class="link-button" (click)="retryRequested.emit()">Повторить</button>
+  </div>
+}
+<section class="panel list-panel">
+  <div class="list-heading">
+    <h2>Список студентов</h2>
+    <span class="muted">{{ loading ? 'Загрузка…' : 'Найдено: ' + total }}</span>
+  </div>
+  @if (!loading && !error && items.length === 0) {
+    <p class="empty">По заданным условиям студенты не найдены.</p>
+  }
+  @if (items.length) {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Студент</th><th>Группа</th><th>ИСУ ID</th><th>Общежитие</th>
+            <th>Комната</th><th>Дата</th><th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of items; track student.isuId) {
+            <tr app-student-row [student]="student" [isAdmin]="isAdmin"
+              [isDeleting]="deleting === student.isuId"
+              (deleteRequested)="deleteRequested.emit($event)"></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  <div class="pager">
+    <label>На странице
+      <select [value]="size" (change)="changeSize($event)">
+        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+      </select>
+    </label>
+    <span>Страница {{ page }} из {{ pages }}</span>
+    <div>
+      <button class="button small" type="button" [disabled]="page <= 1 || loading"
+        (click)="pageChanged.emit(page - 1)">Назад</button>
+      <button class="button small" type="button" [disabled]="page >= pages || loading"
+        (click)="pageChanged.emit(page + 1)">Вперёд</button>
+    </div>
+  </div>
+</section>

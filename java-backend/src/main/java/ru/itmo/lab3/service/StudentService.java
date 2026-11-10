@@ -80,12 +80,12 @@ public class StudentService {
         }
         if (input.dormitory != null) {
             if (input.dormitory < 1 || input.dormitory > 20)
-                throw new ApiException(422, "dormitory", "Общежитие должно быть от 1 до 20.");
+                throw new ApiException(422, "dormitory", "Общежитие указано неверно: введите номер от 1 до 20.");
             student.setDormitory(input.dormitory);
         }
         if (input.room != null) {
             if (input.room < 100 || input.room > 599)
-                throw new ApiException(422, "room", "Комната должна быть от 100 до 599.");
+                throw new ApiException(422, "room", "Комната указана неверно: введите номер от 100 до 599.");
             student.setRoom(input.room);
         }
         if (input.settlementDate != null) {
@@ -118,8 +118,8 @@ public class StudentService {
         if (isuId != null && !isuId.matches("[1-9]\\d{5}"))
             throw new ApiException(422, "isuId", "Неверный ИСУ ID.");
         filter.isuId = isuId;
-        filter.dormitory = number(values.get("dormitory"), "dormitory", 1, 20);
-        filter.room = number(values.get("room"), "room", 100, 599);
+        filter.dormitory = number(values.get("dormitory"), "dormitory", "Общежитие указано неверно", 1, 20);
+        filter.room = number(values.get("room"), "room", "Комната указана неверно", 100, 599);
         String foreign = values.get("isForeign");
         if (foreign != null) {
             if (!foreign.equals("true") && !foreign.equals("false"))
@@ -150,13 +150,13 @@ public class StudentService {
 
         filter.paginated = values.containsKey("page") || values.containsKey("size");
         if (filter.paginated) {
-            filter.page = number(values.getOrDefault("page", "1"), "page", 1, 100000);
-            filter.size = number(values.getOrDefault("size", "20"), "size", 1, 100);
+            filter.page = number(values.getOrDefault("page", "1"), "page", "Номер страницы указан неверно", 1, 100000);
+            filter.size = number(values.getOrDefault("size", "20"), "size", "Размер страницы указан неверно", 1, 100);
         }
         return filter;
     }
 
-    private static Integer number(String raw, String field, int min, int max) {
+    private static Integer number(String raw, String field, String label, int min, int max) {
         if (raw == null) return null;
         try {
             int value = Integer.parseInt(raw);
@@ -164,7 +164,8 @@ public class StudentService {
         } catch (NumberFormatException ignored) {
             // Возвращаем одинаковую ошибку для текста и числа вне диапазона.
         }
-        throw new ApiException(422, field, "Допустимое значение: от " + min + " до " + max + ".");
+        throw new ApiException(422, field, label + ": введите число от "
+            + min + " до " + max + ".");
     }
 
     private static LocalDate optionalDate(String field, String raw) {

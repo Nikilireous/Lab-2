@@ -1,0 +1,36 @@
+<section class="panel filters-panel" aria-label="Поиск и фильтры">
+  <form [formGroup]="form" class="filters-grid">
+    <label class="wide">Поиск<input formControlName="search" placeholder="ФИО или ИСУ ID" maxlength="120" /></label>
+    <label>ФИО<input formControlName="fullName" placeholder="Точное ФИО" /></label>
+    <label>Группа<input formControlName="group" placeholder="P3212" /></label>
+    <label>ИСУ ID<input formControlName="isuId" placeholder="123456" /></label>
+    <label>Общежитие<input type="number" min="1" max="20" formControlName="dormitory" /></label>
+    <label>Комната<input type="number" min="100" max="599" formControlName="room" /></label>
+    <label>Статус<select formControlName="isForeign">
+      <option value="">Все</option>
+      <option value="false">РФ</option>
+      <option value="true">Иностранный</option>
+    </select></label>
+    <label>Примечания<input formControlName="notes" placeholder="Содержат текст" maxlength="500" /></label>
+    <label>Дата заселения<input type="date" formControlName="settlementDate" /></label>
+    <label>Период с<input type="date" formControlName="dateFrom" /></label>
+    <label>Период по<input type="date" formControlName="dateTo" /></label>
+  </form>
+  <div class="filter-bottom">
+    <button type="button" class="button subtle" (click)="resetRequested.emit()">Сбросить фильтры</button>
+    <div class="sort-controls">
+      <label>Сортировка<select [value]="sort" (change)="changeSort($event)">
+        <option value="isuId">ИСУ ID</option>
+        <option value="fullName">ФИО</option>
+        <option value="group">Группа</option>
+        <option value="dormitory">Общежитие</option>
+        <option value="room">Комната</option>
+        <option value="settlementDate">Дата заселения</option>
+        <option value="isForeign">Статус</option>
+      </select></label>
+      <button type="button" class="button subtle" (click)="orderToggled.emit()">
+        {{ order === 'asc' ? '↑ По возрастанию' : '↓ По убыванию' }}
+      </button>
+    </div>
+  </div>
+</section>

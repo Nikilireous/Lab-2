@@ -6,6 +6,7 @@ import { AuthStore } from './core/auth';
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
+  styleUrl: './app.css',
 })
 export class App implements OnInit {
   readonly auth = inject(AuthStore);

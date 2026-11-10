@@ -1,7 +1,8 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router, CanActivateFn } from '@angular/router';
-import { catchError, finalize, Observable, shareReplay, tap, throwError, switchMap } from 'rxjs';
+import { catchError, filter, finalize, fromEvent, Observable, shareReplay, tap, throwError, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthData, User } from './models';
 
 const KEY = 'lab4-auth';
@@ -10,11 +11,25 @@ const KEY = 'lab4-auth';
 export class AuthStore {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private destroy = inject(DestroyRef);
   private state = signal<AuthData | null>(this.restore());
   readonly user = computed(() => this.state()?.user ?? null);
   readonly isAdmin = computed(() => this.user()?.role === 'ADMIN');
   readonly token = computed(() => this.state()?.accessToken ?? null);
   private pendingRefresh?: Observable<{ accessToken: string }>;
+
+  constructor() {
+    localStorage.removeItem('lab3-auth');
+    fromEvent<StorageEvent>(window, 'storage')
+      .pipe(filter((event) => event.key === KEY), takeUntilDestroyed(this.destroy))
+      .subscribe(() => {
+        this.state.set(this.restore());
+        if (this.token() && ['/login', '/register'].includes(this.router.url))
+          this.router.navigateByUrl('/students');
+        else if (!this.token() && !['/login', '/register'].includes(this.router.url))
+          this.router.navigateByUrl('/login');
+      });
+  }
 
   private restore(): AuthData | null {
     try {
@@ -55,7 +70,10 @@ export class AuthStore {
         refreshToken: current.refreshToken,
       })
       .pipe(
-        tap((result) => this.save({ ...current, accessToken: result.accessToken })),
+        tap((result) => {
+          if (this.state()?.refreshToken === current.refreshToken)
+            this.save({ ...current, accessToken: result.accessToken });
+        }),
         finalize(() => {
           this.pendingRefresh = undefined;
         }),

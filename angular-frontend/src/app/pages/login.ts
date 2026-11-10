@@ -9,6 +9,7 @@ import { errorMessage } from '../core/errors';
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
+  styleUrl: './login.css',
 })
 export class LoginPage {
   private fb = inject(FormBuilder);

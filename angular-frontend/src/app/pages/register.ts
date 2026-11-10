@@ -9,6 +9,7 @@ import { errorMessage } from '../core/errors';
   selector: 'app-register',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './register.html',
+  styleUrl: './register.css',
 })
 export class RegisterPage {
   private fb = inject(FormBuilder);

@@ -5,6 +5,7 @@ import { errorMessage } from '../core/errors';
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.html',
+  styleUrl: './profile.css',
 })
 export class ProfilePage implements OnInit {
   readonly auth = inject(AuthStore);

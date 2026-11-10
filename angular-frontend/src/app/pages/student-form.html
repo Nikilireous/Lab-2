@@ -50,7 +50,7 @@
       </label>
     </div>
     @if (form.invalid && form.touched) {
-      <p class="alert">Проверьте ФИО, группу, ИСУ ID, комнату и остальные обязательные поля.</p>
+      <p class="alert">{{ validationMessage() }}</p>
     }
     @if (error()) {
       <p class="alert" role="alert">{{ error() }}</p>

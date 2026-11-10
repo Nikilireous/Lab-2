@@ -1,0 +1,14 @@
+:host:last-child td { border-bottom: 0; }
+td { padding: 12px; border-bottom: 1px solid #e8ecef; vertical-align: middle; }
+.student-link { text-decoration: none; font-weight: 600; }
+.student-link:hover { text-decoration: underline; }
+.row-actions { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; }
+@media (max-width: 600px) {
+  :host { display: block; width: 100%; border-bottom: 8px solid #f3f5f6; padding: 6px 12px; }
+  td { display: block; width: 100%; border: 0; padding: 6px 0; }
+  td:not(:first-child) { display: flex; gap: 12px; align-items: flex-start; }
+  td:not(:first-child)::before { content: attr(data-label); flex: 0 0 94px; font-size: 12px; font-weight: 600; color: #73808b; }
+  td:last-child { display: block; }
+  td:last-child::before { display: block; margin-bottom: 7px; }
+  .row-actions { flex-wrap: wrap; }
+}

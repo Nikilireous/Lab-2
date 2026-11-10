@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs';
@@ -8,18 +8,22 @@ import { errorMessage } from '../core/errors';
 import { Filters, Student } from '../core/models';
 import { StudentsApi } from '../core/students';
 import { StudentSearch } from '../core/student-search';
-import { StudentRow } from './student-row';
+import { StudentChanges } from '../core/student-changes';
+import { StudentFilters } from './student-filters';
+import { StudentList } from './student-list';
 
 @Component({
   selector: 'app-students',
-  imports: [ReactiveFormsModule, RouterLink, StudentRow],
+  imports: [RouterLink, StudentFilters, StudentList],
   templateUrl: './students.html',
+  styleUrl: './students.css',
 })
 export class StudentsPage implements OnInit {
   private fb = inject(FormBuilder);
   private api = inject(StudentsApi);
   private search = inject(StudentSearch);
   private destroy = inject(DestroyRef);
+  private changes = inject(StudentChanges);
   readonly auth = inject(AuthStore);
   readonly form = this.fb.nonNullable.group({
     search: '',
@@ -46,6 +50,7 @@ export class StudentsPage implements OnInit {
   readonly pages = () => Math.max(1, Math.ceil(this.total() / this.size()));
   private reload$ = new BehaviorSubject(0);
   ngOnInit(): void {
+    this.changes.changes$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => this.reload());
     this.form.valueChanges
       .pipe(
         debounceTime(250),
@@ -89,8 +94,8 @@ export class StudentsPage implements OnInit {
   reset(): void {
     this.form.reset();
   }
-  setSort(event: Event): void {
-    this.sort.set((event.target as HTMLSelectElement).value);
+  setSort(value: string): void {
+    this.sort.set(value);
     this.page.set(1);
     this.reload();
   }
@@ -99,8 +104,8 @@ export class StudentsPage implements OnInit {
     this.page.set(1);
     this.reload();
   }
-  setSize(event: Event): void {
-    this.size.set(Number((event.target as HTMLSelectElement).value));
+  setSize(value: number): void {
+    this.size.set(value);
     this.page.set(1);
     this.reload();
   }

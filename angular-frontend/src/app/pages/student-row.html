@@ -9,7 +9,7 @@
 <td data-label="Действия">
   <div class="row-actions">
     <a class="button small" [routerLink]="['/students', student.isuId]">Открыть</a>
-    @if (auth.isAdmin()) {
+    @if (isAdmin) {
       <a class="button small" [routerLink]="['/students', student.isuId, 'edit']">Изменить</a>
       <button
         type="button"

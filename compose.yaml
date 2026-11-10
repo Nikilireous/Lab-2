@@ -1,74 +1,66 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: ${DB_IMAGE}
     environment:
-      POSTGRES_DB: students_lab3
-      POSTGRES_USER: lab3
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:${DB_DATA_PATH}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lab3 -d students_lab3"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 3s
       retries: 12
     ports:
-      - "127.0.0.1:${DB_HOST_PORT:-5433}:5432"
+      - "${BIND_ADDRESS}:${DB_HOST_PORT}:${DB_INTERNAL_PORT}"
 
   api:
-    build: ./java-backend
+    build: ${API_BUILD_CONTEXT}
     environment:
-      DB_URL: jdbc:postgresql://db:5432/students_lab3
-      DB_USER: lab3
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      ACCESS_MINUTES: ${ACCESS_MINUTES:-15}
-      REFRESH_DAYS: ${REFRESH_DAYS:-7}
+      ACCESS_MINUTES: ${ACCESS_MINUTES}
+      REFRESH_DAYS: ${REFRESH_DAYS}
       ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
-      TZ: Europe/Moscow
-      CORS_ORIGINS: http://localhost:5500,http://127.0.0.1:5500,http://localhost:5501,http://127.0.0.1:5501,http://localhost:8081,http://127.0.0.1:8081
+      TZ: ${APP_TIMEZONE}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
-      - "127.0.0.1:${API_PORT:-8000}:8080"
+      - "${BIND_ADDRESS}:${API_PORT}:${API_INTERNAL_PORT}"
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/openapi.yaml >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS ${API_HEALTH_URL} >/dev/null"]
       interval: 5s
       timeout: 3s
       retries: 24
       start_period: 30s
 
   frontend:
-    build: ./angular-frontend
+    build: ${FRONTEND_BUILD_CONTEXT}
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-5500}:80"
-    depends_on:
-      api:
-        condition: service_healthy
-
-  legacy-frontend:
-    profiles: [legacy]
-    build: ./JS
-    ports:
-      - "127.0.0.1:${LEGACY_FRONTEND_PORT:-5501}:80"
+      - "${BIND_ADDRESS}:${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     depends_on:
       api:
         condition: service_healthy
 
   swagger:
-    image: docker.swagger.io/swaggerapi/swagger-ui:v5.21.0
+    image: ${SWAGGER_IMAGE}
     environment:
-      SWAGGER_JSON: /openapi.yaml
+      SWAGGER_JSON: ${SWAGGER_SPEC_TARGET}
     volumes:
-      - ./java-backend/src/main/webapp/openapi.yaml:/openapi.yaml:ro
+      - ${SWAGGER_SPEC_SOURCE}:${SWAGGER_SPEC_TARGET}:ro
     ports:
-      - "127.0.0.1:${SWAGGER_PORT:-8081}:8080"
+      - "${BIND_ADDRESS}:${SWAGGER_PORT}:${SWAGGER_INTERNAL_PORT}"
     depends_on:
       api:
         condition: service_healthy
 
 volumes:
   postgres_data:
+    name: ${DB_VOLUME_NAME}
