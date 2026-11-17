@@ -6,6 +6,7 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
@@ -35,10 +36,10 @@ public class SecurityFilter implements ContainerRequestFilter {
                 || path.endsWith("auth/logout")) return;
 
         try {
-            String header = request.getHeaderString("Authorization");
-            if (header == null || !header.startsWith("Bearer "))
-                throw new ApiException(401, "detail", "Нужен Bearer access-токен.");
-            String username = jwt.subject(header.substring(7), "access");
+            Cookie access = request.getCookies().get(AuthCookies.ACCESS);
+            if (access == null)
+                throw new ApiException(401, "detail", "Нет cookie с access-токеном.");
+            String username = jwt.subject(access.getValue(), "access");
             UserAccount user = users.findByUsername(username);
             if (user == null) throw new ApiException(401, "detail", "Пользователь не найден.");
 
@@ -51,7 +52,7 @@ public class SecurityFilter implements ContainerRequestFilter {
                 public Principal getUserPrincipal() { return user::getUsername; }
                 public boolean isUserInRole(String role) { return user.getRole().name().equals(role); }
                 public boolean isSecure() { return original.isSecure(); }
-                public String getAuthenticationScheme() { return "Bearer"; }
+                public String getAuthenticationScheme() { return "Cookie"; }
             });
         } catch (ApiException error) {
             request.abortWith(Response.status(error.getStatus()).type(MediaType.APPLICATION_JSON)

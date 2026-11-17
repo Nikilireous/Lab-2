@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthStore } from './core/auth';
 
@@ -8,9 +8,6 @@ import { AuthStore } from './core/auth';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit {
+export class App {
   readonly auth = inject(AuthStore);
-  ngOnInit(): void {
-    if (this.auth.token()) this.auth.me().subscribe({ error: () => {} });
-  }
 }

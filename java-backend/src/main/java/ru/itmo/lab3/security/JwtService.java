@@ -7,11 +7,14 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
+import javax.crypto.Mac;
 import ru.itmo.lab3.api.ApiException;
 import ru.itmo.lab3.dto.AuthResponse;
 import ru.itmo.lab3.dto.UserDto;
@@ -45,6 +48,20 @@ public class JwtService {
 
     public String accessToken(UserAccount user) {
         return token(user, "access", Instant.now().plus(accessMinutes, ChronoUnit.MINUTES));
+    }
+
+    public int accessMaxAgeSeconds() { return accessMinutes * 60; }
+    public int refreshMaxAgeSeconds() { return refreshDays * 24 * 60 * 60; }
+
+    public String csrfToken(String refreshToken) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(key);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                mac.doFinal(refreshToken.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException error) {
+            throw new IllegalStateException(error);
+        }
     }
 
     private String token(UserAccount user, String type, Instant expires) {

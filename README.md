@@ -8,7 +8,7 @@
 2. Выполните `docker compose up -d --build`.
 3. Откройте [Angular-клиент](http://127.0.0.1:5500/login) и [Swagger UI](http://127.0.0.1:8081/). API доступно на <http://127.0.0.1:8000/api/>.
 
-Angular использует адрес `/api/`, который Nginx внутри Docker перенаправляет на Java-сервер. Поэтому браузеру не нужны отдельный порт API и настройки CORS. Данные PostgreSQL хранятся в Docker volume. `docker compose down` останавливает контейнеры и сохраняет базу.
+Angular использует адрес `/api/`, который Nginx внутри Docker перенаправляет на Java-сервер. JWT находятся в HttpOnly cookies, а изменяющие запросы защищены CSRF-заголовком. Поэтому браузеру не нужны отдельный порт API и настройки CORS. Данные PostgreSQL хранятся в Docker volume. `docker compose down` останавливает контейнеры и сохраняет базу.
 
 Для DBeaver: PostgreSQL на `127.0.0.1:5433`, база `students_lab3`, пользователь `lab3`, пароль `DB_PASSWORD` из корневого `.env`. Внутри Docker API подключается к `db:5432`.
 

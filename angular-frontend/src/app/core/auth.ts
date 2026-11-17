@@ -1,120 +1,107 @@
-import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router, CanActivateFn } from '@angular/router';
-import { catchError, filter, finalize, fromEvent, Observable, shareReplay, tap, throwError, switchMap } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthData, User } from './models';
-
-const KEY = 'lab4-auth';
+import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { User } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
   private http = inject(HttpClient);
   private router = inject(Router);
-  private destroy = inject(DestroyRef);
-  private state = signal<AuthData | null>(this.restore());
-  readonly user = computed(() => this.state()?.user ?? null);
+  private state = signal<User | null>(null);
+  private channel = new BroadcastChannel('lab4-session');
+  private pendingMe?: Observable<User>;
+  private pendingRefresh?: Observable<void>;
+  readonly user = this.state.asReadonly();
   readonly isAdmin = computed(() => this.user()?.role === 'ADMIN');
-  readonly token = computed(() => this.state()?.accessToken ?? null);
-  private pendingRefresh?: Observable<{ accessToken: string }>;
+  readonly logoutError = signal('');
 
   constructor() {
-    localStorage.removeItem('lab3-auth');
-    fromEvent<StorageEvent>(window, 'storage')
-      .pipe(filter((event) => event.key === KEY), takeUntilDestroyed(this.destroy))
-      .subscribe(() => {
-        this.state.set(this.restore());
-        if (this.token() && ['/login', '/register'].includes(this.router.url))
-          this.router.navigateByUrl('/students');
-        else if (!this.token() && !['/login', '/register'].includes(this.router.url))
-          this.router.navigateByUrl('/login');
+    this.channel.onmessage = ({ data }) => {
+      if (data === 'logout') this.clear();
+      if (data === 'login') this.me().subscribe({
+        next: () => this.router.navigateByUrl('/students'),
+        error: () => {},
       });
+    };
   }
 
-  private restore(): AuthData | null {
-    try {
-      const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
-      return raw?.accessToken && raw?.refreshToken && raw?.user ? (raw as AuthData) : null;
-    } catch {
-      return null;
-    }
+  private signedIn(user: User): void {
+    this.state.set(user);
+    this.channel.postMessage('login');
   }
-  private save(value: AuthData): void {
-    this.state.set(value);
-    localStorage.setItem(KEY, JSON.stringify(value));
+
+  login(username: string, password: string): Observable<User> {
+    return this.http.post<User>('/api/auth/login', { username, password })
+      .pipe(tap((user) => this.signedIn(user)));
   }
-  login(username: string, password: string): Observable<AuthData> {
-    return this.http
-      .post<AuthData>('/api/auth/login', { username, password })
-      .pipe(tap((data) => this.save(data)));
+
+  register(username: string, email: string, password: string): Observable<User> {
+    return this.http.post<User>('/api/auth/register', { username, email, password })
+      .pipe(tap((user) => this.signedIn(user)));
   }
-  register(username: string, email: string, password: string): Observable<AuthData> {
-    return this.http
-      .post<AuthData>('/api/auth/register', { username, email, password })
-      .pipe(tap((data) => this.save(data)));
-  }
+
   me(): Observable<User> {
-    return this.http.get<User>('/api/auth/me').pipe(
-      tap((user) => {
-        const current = this.state();
-        if (current) this.save({ ...current, user });
-      }),
+    if (this.pendingMe) return this.pendingMe;
+    this.pendingMe = this.http.get<User>('/api/auth/me').pipe(
+      tap((user) => this.state.set(user)),
+      finalize(() => { this.pendingMe = undefined; }),
+      shareReplay(1),
     );
+    return this.pendingMe;
   }
-  refresh(): Observable<{ accessToken: string }> {
+
+  ensureUser(): Observable<User> {
+    return this.user() ? of(this.user()!) : this.me();
+  }
+
+  refresh(): Observable<void> {
     if (this.pendingRefresh) return this.pendingRefresh;
-    const current = this.state();
-    if (!current?.refreshToken) return throwError(() => new Error('Нет refresh-токена'));
-    this.pendingRefresh = this.http
-      .post<{ accessToken: string }>('/api/auth/refresh', {
-        refreshToken: current.refreshToken,
-      })
-      .pipe(
-        tap((result) => {
-          if (this.state()?.refreshToken === current.refreshToken)
-            this.save({ ...current, accessToken: result.accessToken });
-        }),
-        finalize(() => {
-          this.pendingRefresh = undefined;
-        }),
-        shareReplay(1),
-      );
+    this.pendingRefresh = this.http.post<void>('/api/auth/refresh', {}).pipe(
+      map(() => undefined),
+      finalize(() => { this.pendingRefresh = undefined; }),
+      shareReplay(1),
+    );
     return this.pendingRefresh;
   }
+
   logout(): void {
-    const refreshToken = this.state()?.refreshToken;
-    if (refreshToken)
-      this.http.post('/api/auth/logout', { refreshToken }).subscribe({ error: () => {} });
+    this.logoutError.set('');
+    this.http.post<void>('/api/auth/logout', {}).subscribe({
+      next: () => {
+        this.clear();
+        this.channel.postMessage('logout');
+      },
+      error: () => this.logoutError.set('Не удалось выйти: сервер недоступен. Попробуйте ещё раз.'),
+    });
+  }
+
+  expire(): void {
+    this.clear();
+    this.channel.postMessage('logout');
+  }
+
+  private clear(): void {
     this.state.set(null);
-    localStorage.removeItem(KEY);
     this.router.navigateByUrl('/login');
   }
 }
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthStore);
-  if (
-    !request.url.startsWith('/api/') ||
-    request.url.startsWith('/api/auth/login') ||
-    request.url.startsWith('/api/auth/register') ||
-    request.url.startsWith('/api/auth/refresh') ||
-    request.url.startsWith('/api/auth/logout')
-  )
-    return next(request);
-  const token = auth.token();
-  const authorized = token
-    ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-    : request;
-  return next(authorized).pipe(
+  if (!request.url.startsWith('/api/') ||
+      ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout']
+        .some((path) => request.url.startsWith(path))) return next(request);
+
+  return next(request).pipe(
     catchError((error) => {
-      if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !token)
+      if (!(error instanceof HttpErrorResponse) || error.status !== 401)
         return throwError(() => error);
       return auth.refresh().pipe(
-        switchMap(({ accessToken }) =>
-          next(request.clone({ setHeaders: { Authorization: `Bearer ${accessToken}` } })),
-        ),
+        switchMap(() => next(request)),
         catchError((refreshError) => {
-          if (refreshError.status === 401) auth.logout();
+          if (refreshError instanceof HttpErrorResponse && refreshError.status === 401)
+            auth.expire();
           return throwError(() => refreshError);
         }),
       );
@@ -124,9 +111,18 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
-  return auth.token() ? true : inject(Router).createUrlTree(['/login']);
+  const router = inject(Router);
+  return auth.ensureUser().pipe(
+    map(() => true),
+    catchError(() => of(router.createUrlTree(['/login']))),
+  );
 };
+
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
-  return auth.isAdmin() ? true : inject(Router).createUrlTree(['/students']);
+  const router = inject(Router);
+  return auth.ensureUser().pipe(
+    map((user) => user.role === 'ADMIN' ? true : router.createUrlTree(['/students'])),
+    catchError(() => of(router.createUrlTree(['/login']))),
+  );
 };

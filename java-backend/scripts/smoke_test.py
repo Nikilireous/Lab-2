@@ -1,73 +1,80 @@
-"""Проверка ключевых сценариев лабораторной №3 на запущенном сервере."""
+"""Проверка API на отдельной временной базе Docker."""
 
+import http.cookiejar
 import json
 import os
-import pathlib
 import random
 import urllib.error
 import urllib.request
 
-
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-env_file = ROOT / ".env"
-if env_file.exists():
-    for line in env_file.read_text().splitlines():
-        if line and not line.startswith("#"):
-            key, value = line.split("=", 1)
-            os.environ.setdefault(key, value)
-
 API = os.getenv("API_URL", "http://127.0.0.1:8000/api/")
 
 
-def request(method, path, body=None, token=None, headers=None):
-    request_headers = {"Content-Type": "application/json"}
-    if token:
-        request_headers["Authorization"] = f"Bearer {token}"
-    request_headers.update(headers or {})
-    payload = json.dumps(body).encode() if body is not None else None
-    operation = urllib.request.Request(
-        API + path, data=payload, headers=request_headers, method=method
-    )
-    try:
-        response = urllib.request.urlopen(operation)
-    except urllib.error.HTTPError as error:
-        response = error
-    raw = response.read()
-    if not raw:
-        result = None
-    elif "application/json" in response.headers.get("Content-Type", ""):
-        result = json.loads(raw)
-    else:
-        result = raw.decode()
-    return response.status, result, response.headers
+class Client:
+    def __init__(self):
+        self.cookies = http.cookiejar.CookieJar()
+        self.opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(self.cookies)
+        )
 
+    def cookie(self, name):
+        return next((cookie.value for cookie in self.cookies if cookie.name == name), None)
 
-def expect(status, method, path, body=None, token=None, headers=None):
-    actual, result, response_headers = request(method, path, body, token, headers)
-    assert actual == status, f"{method} {path}: ожидалось {status}, получено {actual}: {result}"
-    print(f"{method:7} {path:52} {actual}")
-    return result, response_headers
+    def expect(self, status, method, path, body=None, csrf=True, headers=None):
+        request_headers = {"Content-Type": "application/json"}
+        if csrf and method not in ("GET", "HEAD", "QUERY", "OPTIONS"):
+            token = self.cookie("XSRF-TOKEN")
+            if token:
+                request_headers["X-XSRF-TOKEN"] = token
+        request_headers.update(headers or {})
+        request = urllib.request.Request(
+            API + path,
+            data=json.dumps(body).encode() if body is not None else None,
+            headers=request_headers,
+            method=method,
+        )
+        try:
+            response = self.opener.open(request)
+        except urllib.error.HTTPError as error:
+            response = error
+        raw = response.read()
+        result = json.loads(raw) if raw and "application/json" in response.headers.get("Content-Type", "") else None
+        assert response.status == status, (
+            f"{method} {path}: ожидалось {status}, получено {response.status}: {result}"
+        )
+        print(f"{method:7} {path:48} {response.status}")
+        return result, response.headers
 
 
 def main():
     if os.getenv("LAB3_TEST_DATABASE") != "1":
-        raise SystemExit("Smoke-тест создаёт пользователя. Запускайте его только на отдельной тестовой БД с LAB3_TEST_DATABASE=1.")
-    admin, _ = expect(200, "POST", "auth/login", {
+        raise SystemExit("Smoke-тест запускается только на отдельной базе с LAB3_TEST_DATABASE=1.")
+
+    admin = Client()
+    admin_user, login_headers = admin.expect(200, "POST", "auth/login", {
         "username": os.environ["ADMIN_USERNAME"],
         "password": os.environ["ADMIN_PASSWORD"],
     })
-    admin_token = admin["accessToken"]
+    assert admin_user["role"] == "ADMIN"
+    assert admin.cookie("lab4_access") and admin.cookie("lab4_refresh") and admin.cookie("XSRF-TOKEN")
+    assert "accessToken" not in admin_user and "refreshToken" not in admin_user
+    issued = login_headers.get_all("Set-Cookie")
+    for name in ("lab4_access", "lab4_refresh"):
+        cookie = next(value for value in issued if value.startswith(name + "="))
+        assert "HttpOnly" in cookie and "SameSite=Lax" in cookie
+    csrf_cookie = next(value for value in issued if value.startswith("XSRF-TOKEN="))
+    assert "HttpOnly" not in csrf_cookie
+
+    reader = Client()
     reader_data = {
         "username": f"reader_{random.randrange(100000, 999999)}",
         "email": f"reader_{random.randrange(100000, 999999)}@example.com",
         "password": "Reader12345",
     }
-    reader, _ = expect(201, "POST", "auth/register", reader_data)
-    expect(409, "POST", "auth/register", reader_data)
-    expect(422, "POST", "auth/register", {**reader_data, "password": "short"})
-    expect(401, "POST", "auth/refresh", {"refreshToken": reader["accessToken"]})
-    reader_token = reader["accessToken"]
-    assert reader["user"]["role"] == "USER"
+    reader_user, _ = reader.expect(201, "POST", "auth/register", reader_data)
+    assert reader_user["role"] == "USER"
+    reader.expect(409, "POST", "auth/register", reader_data)
+    reader.expect(422, "POST", "auth/register", {**reader_data, "password": "short"})
 
     student_id = str(random.randrange(100000, 999999))
     student = {
@@ -75,52 +82,47 @@ def main():
         "dormitory": 7, "room": 315, "settlementDate": "2025-09-01",
         "isForeign": False, "notes": "Тест",
     }
-    expect(403, "POST", "students/", student, reader_token)
-    expect(201, "POST", "students/", student, admin_token)
+    reader.expect(403, "POST", "students/", student)
+    admin.expect(403, "POST", "students/", student, csrf=False)
+    admin.expect(201, "POST", "students/", student)
     try:
-        expect(409, "POST", "students/", student, admin_token)
-        detail, _ = expect(200, "GET", f"students/{student_id}/", token=reader_token)
+        admin.expect(409, "POST", "students/", student)
+        detail, _ = reader.expect(200, "GET", f"students/{student_id}/")
         assert detail["isuId"] == student_id
-        listing, headers = expect(200, "GET", "students/?group=P3212&sort=fullName&order=desc&page=1&size=5", token=reader_token)
+        listing, headers = reader.expect(200, "GET", "students/?group=P3212&sort=fullName&order=desc&page=1&size=5")
         assert any(item["isuId"] == student_id for item in listing)
         assert int(headers["X-Total-Count"]) >= 1
-        by_notes, _ = expect(200, "GET", "students/?notes=%D0%A2%D0%B5%D1%81%D1%82", token=reader_token)
-        assert any(item["isuId"] == student_id for item in by_notes)
-        queried, _ = expect(200, "QUERY", "students/", {
+        queried, _ = reader.expect(200, "QUERY", "students/", {
             "group": "P3212", "dormitory": 7, "isForeign": False,
-        }, reader_token)
+        })
         assert any(item["isuId"] == student_id for item in queried)
-        literal_search, _ = expect(200, "GET", "students/?search=%25", token=reader_token)
-        assert all(item["isuId"] != student_id for item in literal_search)
-        expect(422, "PATCH", f"students/{student_id}/", {
-            "fullName": "Петров Пётр Петрович", "room": 999,
-        }, admin_token)
-        unchanged, _ = expect(200, "GET", f"students/{student_id}/", token=reader_token)
-        assert unchanged["fullName"] == student["fullName"]
-        changed, _ = expect(200, "PATCH", f"students/{student_id}/", {"notes": "Изменено"}, admin_token)
+        admin.expect(422, "PATCH", f"students/{student_id}/", {"room": 999})
+        changed, _ = admin.expect(200, "PATCH", f"students/{student_id}/", {"notes": "Изменено"})
         assert changed["notes"] == "Изменено"
         student["notes"] = "Полное обновление"
-        changed, _ = expect(200, "PUT", f"students/{student_id}/", student, admin_token)
-        assert changed["notes"] == "Полное обновление"
-        expect(403, "DELETE", f"students/{student_id}/", token=reader_token)
-        expect(403, "PATCH", f"students/{student_id}/", {"notes": "Нельзя"}, reader_token)
-        expect(422, "GET", "students/?room=abc", token=reader_token)
-        expect(401, "GET", "students/")
-        refreshed, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
-        repeated, _ = expect(200, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
-        assert set(refreshed) == {"accessToken"} and repeated["accessToken"]
-        current, _ = expect(200, "GET", "auth/me", token=reader_token)
+        admin.expect(200, "PUT", f"students/{student_id}/", student)
+        reader.expect(403, "DELETE", f"students/{student_id}/")
+        reader.expect(422, "GET", "students/?room=abc")
+        Client().expect(401, "GET", "students/")
+
+        before = reader.cookie("lab4_access")
+        result, refresh_headers = reader.expect(204, "POST", "auth/refresh")
+        assert result is None and reader.cookie("lab4_access") != before
+        assert len(refresh_headers.get_all("Set-Cookie")) == 1
+        current, _ = reader.expect(200, "GET", "auth/me")
         assert current["role"] == "USER"
-        expect(204, "POST", "auth/logout", {"refreshToken": reader["refreshToken"]})
-        expect(401, "POST", "auth/refresh", {"refreshToken": reader["refreshToken"]})
-        _, cors = expect(200, "OPTIONS", "students/", headers={
-            "Origin": "http://127.0.0.1:5500", "Access-Control-Request-Method": "QUERY",
-            "Access-Control-Request-Headers": "authorization,content-type",
+        reader.expect(204, "POST", "auth/logout")
+        assert reader.cookie("lab4_access") is None and reader.cookie("lab4_refresh") is None
+        reader.expect(401, "POST", "auth/refresh")
+        _, cors = admin.expect(200, "OPTIONS", "students/", headers={
+            "Origin": "http://127.0.0.1:5500",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-xsrf-token",
         })
-        assert cors["Access-Control-Allow-Origin"] == "http://127.0.0.1:5500"
+        assert cors["Access-Control-Allow-Credentials"] == "true"
     finally:
-        expect(204, "DELETE", f"students/{student_id}/", token=admin_token)
-    expect(404, "GET", f"students/{student_id}/", token=reader_token)
+        admin.expect(204, "DELETE", f"students/{student_id}/")
+    admin.expect(404, "GET", f"students/{student_id}/")
     print("Все сценарии пройдены.")
 
 

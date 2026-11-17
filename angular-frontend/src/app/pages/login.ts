@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -11,7 +11,7 @@ import { errorMessage } from '../core/errors';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
   private fb = inject(FormBuilder);
   private auth = inject(AuthStore);
   private router = inject(Router);
@@ -21,6 +21,12 @@ export class LoginPage {
   });
   readonly loading = signal(false);
   readonly error = signal('');
+  ngOnInit(): void {
+    this.auth.ensureUser().subscribe({
+      next: () => this.router.navigateByUrl('/students'),
+      error: () => {},
+    });
+  }
   submit(): void {
     if (this.form.invalid || this.loading()) return;
     this.loading.set(true);

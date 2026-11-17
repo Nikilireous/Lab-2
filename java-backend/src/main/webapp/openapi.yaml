@@ -2,15 +2,23 @@ openapi: 3.0.3
 info:
   title: Учёт студентов общежития — лабораторная №3
   version: 1.0.0
-  description: Jakarta EE REST API с PostgreSQL, Hibernate/JPA и JWT.
+  description: Jakarta EE REST API с PostgreSQL, Hibernate/JPA и JWT в HttpOnly cookies. Для изменения данных нужен заголовок X-XSRF-TOKEN со значением одноимённой cookie.
 servers:
-  - url: http://localhost:8000/api
+  - url: http://127.0.0.1:8000/api
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: lab4_access
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: lab4_refresh
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
   schemas:
     Student:
       type: object
@@ -30,17 +38,6 @@ components:
         username: { type: string, example: student1 }
         email: { type: string, format: email, example: student@example.com }
         role: { type: string, enum: [USER, ADMIN] }
-    Auth:
-      type: object
-      properties:
-        accessToken: { type: string }
-        refreshToken: { type: string }
-        user: { $ref: '#/components/schemas/User' }
-    AccessToken:
-      type: object
-      required: [accessToken]
-      properties:
-        accessToken: { type: string }
     Error:
       type: object
       properties:
@@ -55,7 +52,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     Unauthorized:
-      description: Нет действительного access-токена
+      description: Нет действительной access-cookie
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -81,10 +78,10 @@ paths:
                 password: { type: string, format: password, example: password123 }
       responses:
         '201':
-          description: Пользователь зарегистрирован
+          description: Пользователь зарегистрирован; JWT переданы в HttpOnly cookies.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Auth' }
+              schema: { $ref: '#/components/schemas/User' }
         '409': { $ref: '#/components/responses/BadRequest' }
         '422': { $ref: '#/components/responses/BadRequest' }
   /auth/login:
@@ -102,49 +99,30 @@ paths:
                 password: { type: string, format: password }
       responses:
         '200':
-          description: Пара JWT и данные пользователя
+          description: Данные пользователя; JWT переданы только в HttpOnly cookies.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Auth' }
+              schema: { $ref: '#/components/schemas/User' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/refresh:
     post:
-      summary: Выдать новый access-токен
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [refreshToken]
-              properties:
-                refreshToken: { type: string }
+      summary: Обновить access-cookie по refresh-cookie
+      security: [{ refreshCookie: [], csrfHeader: [] }]
       responses:
-        '200':
-          description: Только новый access-токен
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AccessToken' }
+        '204': { description: Новая access-cookie в Set-Cookie; тела ответа нет }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /auth/logout:
     post:
-      summary: Завершить сеанс и отозвать refresh-токен
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [refreshToken]
-              properties:
-                refreshToken: { type: string }
+      summary: Завершить сеанс, отозвать refresh и удалить cookies
+      security: [{ refreshCookie: [], csrfHeader: [] }]
       responses:
-        '204': { description: Сеанс завершён }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+        '204': { description: Сеанс завершён; cookies удалены }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /auth/me:
     get:
       summary: Текущий пользователь
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [] }]
       responses:
         '200':
           description: Учётная запись
@@ -155,7 +133,7 @@ paths:
   /students/:
     get:
       summary: Список, фильтры, поиск, сортировка и пагинация
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [] }]
       parameters:
         - { in: query, name: fullName, schema: { type: string } }
         - { in: query, name: group, schema: { type: string } }
@@ -186,7 +164,7 @@ paths:
         '422': { $ref: '#/components/responses/BadRequest' }
     post:
       summary: Создать студента (ADMIN)
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [], csrfHeader: [] }]
       requestBody:
         required: true
         content:
@@ -204,7 +182,7 @@ paths:
     x-query:
       summary: Фильтрация JSON-телом для существующего клиента
       description: Тот же поиск, что GET, но параметры передаются JSON-объектом.
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [] }]
       requestBody:
         required: true
         content:
@@ -221,7 +199,7 @@ paths:
       - { in: path, name: isuId, required: true, schema: { type: string, example: '123456' } }
     get:
       summary: Карточка студента
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [] }]
       responses:
         '200':
           description: Студент
@@ -231,7 +209,7 @@ paths:
         '404': { $ref: '#/components/responses/BadRequest' }
     put:
       summary: Полная замена полей (ADMIN)
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [], csrfHeader: [] }]
       requestBody:
         required: true
         content:
@@ -246,7 +224,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     patch:
       summary: Частичное обновление (ADMIN)
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [], csrfHeader: [] }]
       requestBody:
         required: true
         content:
@@ -261,7 +239,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     delete:
       summary: Удалить студента (ADMIN)
-      security: [{ bearerAuth: [] }]
+      security: [{ cookieAuth: [], csrfHeader: [] }]
       responses:
         '204': { description: Студент удалён }
         '403': { $ref: '#/components/responses/Forbidden' }

@@ -2,6 +2,7 @@ package ru.itmo.lab3.api;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -11,12 +12,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import ru.itmo.lab3.dto.AuthResponse;
-import ru.itmo.lab3.dto.AccessTokenResponse;
 import ru.itmo.lab3.dto.LoginRequest;
-import ru.itmo.lab3.dto.RefreshRequest;
 import ru.itmo.lab3.dto.RegisterRequest;
 import ru.itmo.lab3.dto.UserDto;
 import ru.itmo.lab3.service.AuthService;
+import ru.itmo.lab3.security.AuthCookies;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -24,34 +24,37 @@ public class AuthResource {
     @Inject
     private AuthService service;
 
+    @Inject
+    private AuthCookies cookies;
+
     @POST
     @Path("/register")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response register(RegisterRequest request) {
         AuthResponse response = service.register(request);
-        return Response.status(201).entity(response).build();
+        return Response.status(201).entity(response.user).cookie(cookies.issue(response)).build();
     }
 
     @POST
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
-    public AuthResponse login(LoginRequest request) {
-        return service.login(request);
+    public Response login(LoginRequest request) {
+        AuthResponse response = service.login(request);
+        return Response.ok(response.user).cookie(cookies.issue(response)).build();
     }
 
     @POST
     @Path("/refresh")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public AccessTokenResponse refresh(RefreshRequest request) {
-        return service.refresh(request);
+    public Response refresh(@CookieParam(AuthCookies.REFRESH) String refreshToken) {
+        String access = service.refresh(refreshToken);
+        return Response.noContent().cookie(cookies.access(access)).build();
     }
 
     @POST
     @Path("/logout")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response logout(RefreshRequest request) {
-        service.logout(request);
-        return Response.noContent().build();
+    public Response logout(@CookieParam(AuthCookies.REFRESH) String refreshToken) {
+        service.logout(refreshToken);
+        return Response.noContent().cookie(cookies.clear()).build();
     }
 
     @GET

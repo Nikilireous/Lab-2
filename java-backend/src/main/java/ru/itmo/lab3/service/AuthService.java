@@ -7,9 +7,7 @@ import java.util.Locale;
 import org.mindrot.jbcrypt.BCrypt;
 import ru.itmo.lab3.api.ApiException;
 import ru.itmo.lab3.dto.AuthResponse;
-import ru.itmo.lab3.dto.AccessTokenResponse;
 import ru.itmo.lab3.dto.LoginRequest;
-import ru.itmo.lab3.dto.RefreshRequest;
 import ru.itmo.lab3.dto.RegisterRequest;
 import ru.itmo.lab3.model.Role;
 import ru.itmo.lab3.model.UserAccount;
@@ -57,22 +55,19 @@ public class AuthService {
         return issue(user);
     }
 
-    public AccessTokenResponse refresh(RefreshRequest request) {
-        if (request == null || request.refreshToken == null)
-            throw new ApiException(422, "refreshToken", "Токен обновления обязателен.");
-        String username = jwt.subject(request.refreshToken, "refresh");
+    public String refresh(String refreshToken) {
+        if (refreshToken == null)
+            throw new ApiException(401, "refreshToken", "Нет cookie с токеном обновления.");
+        String username = jwt.subject(refreshToken, "refresh");
         UserAccount user = users.findByUsername(username);
         if (user == null) throw new ApiException(401, "detail", "Пользователь не найден.");
-        if (!refreshTokens.isValid(request.refreshToken, user))
+        if (!refreshTokens.isValid(refreshToken, user))
             throw new ApiException(401, "refreshToken", "Токен обновления не найден или истёк.");
-        return new AccessTokenResponse(jwt.accessToken(user));
+        return jwt.accessToken(user);
     }
 
-    public void logout(RefreshRequest request) {
-        if (request == null || request.refreshToken == null)
-            throw new ApiException(422, "refreshToken", "Токен обновления обязателен.");
-        jwt.subject(request.refreshToken, "refresh");
-        refreshTokens.delete(request.refreshToken);
+    public void logout(String refreshToken) {
+        if (refreshToken != null) refreshTokens.delete(refreshToken);
     }
 
     private AuthResponse issue(UserAccount user) {

@@ -30,6 +30,7 @@ form.addEventListener('submit', async event => {
   try {
     const response = await fetch(api + (registering ? 'register' : 'login'), {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
@@ -37,7 +38,7 @@ form.addEventListener('submit', async event => {
     if (!response.ok) {
       throw new Error(Object.values(result.errors || {}).join('; ') || 'Ошибка входа');
     }
-    localStorage.setItem('lab3-auth', JSON.stringify(result));
+    localStorage.removeItem('lab3-auth');
     const next = new URLSearchParams(location.search).get('next');
     const destination = next && /^(index|student-profile|student-form)\.html(?:\?|$)/.test(next)
       ? next : 'index.html?v=students-api-3';

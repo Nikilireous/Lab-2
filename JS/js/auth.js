@@ -1,82 +1,74 @@
-// Общий слой авторизации для существующих страниц лабораторной №2.
-// Основной код страниц менять не требуется: здесь добавляется Bearer-токен к fetch.
+// Авторизация старых страниц лабораторной №3 через cookies API.
 (() => {
   const api = `http://${location.hostname || 'localhost'}:8000/api/`;
-  const storageKey = 'lab3-auth';
   const originalFetch = window.fetch.bind(window);
 
-  function saved() {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || {}; }
-    catch { return {}; }
+  function csrfToken() {
+    const cookie = document.cookie.split('; ').find(part => part.startsWith('XSRF-TOKEN='));
+    return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
   }
 
   function loginPage() {
-    localStorage.removeItem(storageKey);
     const next = location.pathname.split('/').pop() + location.search;
     location.replace(`login.html?next=${encodeURIComponent(next)}`);
+  }
+
+  async function send(input, options = {}) {
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = new Headers(options.headers);
+    if (!['GET', 'HEAD', 'QUERY'].includes(method)) headers.set('X-XSRF-TOKEN', csrfToken());
+    return originalFetch(input, { ...options, headers, credentials: 'include' });
   }
 
   window.fetch = async (input, options = {}) => {
     const url = typeof input === 'string' ? input : input.url;
     if (!url.startsWith(api + 'students/')) return originalFetch(input, options);
 
-    async function send(accessToken) {
-      const headers = new Headers(options.headers);
-      headers.set('Authorization', `Bearer ${accessToken}`);
-      return originalFetch(input, { ...options, headers });
-    }
-
-    let auth = saved();
-    if (!auth.accessToken) {
-      loginPage();
-      return new Response('{}', { status: 401 });
-    }
-
-    let response = await send(auth.accessToken);
+    let response = await send(input, options);
     if (response.status !== 401) return response;
 
-    const refreshed = await originalFetch(api + 'auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: auth.refreshToken })
-    });
+    const refreshed = await send(api + 'auth/refresh', { method: 'POST' });
     if (!refreshed.ok) {
       loginPage();
       return response;
     }
-
-    const { accessToken } = await refreshed.json();
-    auth = { ...auth, accessToken };
-    localStorage.setItem(storageKey, JSON.stringify(auth));
-    response = await send(auth.accessToken);
+    response = await send(input, options);
     if (response.status === 401) loginPage();
     return response;
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const auth = saved();
-    if (!auth.accessToken) {
+  document.addEventListener('DOMContentLoaded', async () => {
+    let response = await send(api + 'auth/me');
+    if (response.status === 401) {
+      const refreshed = await send(api + 'auth/refresh', { method: 'POST' });
+      if (refreshed.ok) response = await send(api + 'auth/me');
+    }
+    if (!response.ok) {
       loginPage();
       return;
     }
 
+    const user = await response.json();
     const header = document.querySelector('.header-container');
     if (header) {
       const panel = document.createElement('div');
       panel.className = 'account-panel';
       const name = document.createElement('span');
       name.className = 'account-name';
-      name.textContent = `${auth.user?.username || 'Пользователь'} (${auth.user?.role || 'USER'})`;
+      name.textContent = `${user.username} (${user.role})`;
       const logout = document.createElement('button');
       logout.type = 'button';
       logout.textContent = 'Выйти';
       logout.className = 'btn btn-secondary';
-      logout.addEventListener('click', loginPage);
+      logout.addEventListener('click', async () => {
+        await send(api + 'auth/logout', { method: 'POST' });
+        loginPage();
+      });
       panel.append(name, logout);
       header.appendChild(panel);
     }
 
-    if (auth.user?.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN') {
       if (location.pathname.endsWith('student-form.html')) {
         location.replace('index.html?v=students-api-3');
         return;

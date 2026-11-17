@@ -3,11 +3,6 @@ export interface User {
   email: string;
   role: 'USER' | 'ADMIN';
 }
-export interface AuthData {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
 export interface Student {
   fullName: string;
   group: string;
