@@ -3,6 +3,9 @@ td { padding: 12px; border-bottom: 1px solid #e8ecef; vertical-align: middle; }
 .student-link { text-decoration: none; font-weight: 600; }
 .student-link:hover { text-decoration: underline; }
 .row-actions { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; }
+:host-context(.virtual-mode) { height: 96px; overflow: hidden; }
+:host-context(.virtual-mode) td { height: 96px; box-sizing: border-box; }
+:host-context(.virtual-mode) .student-link { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) {
   :host { display: block; width: 100%; border-bottom: 8px solid #f3f5f6; padding: 6px 12px; }
   td { display: block; width: 100%; border: 0; padding: 6px 0; }
@@ -11,4 +14,12 @@ td { padding: 12px; border-bottom: 1px solid #e8ecef; vertical-align: middle; }
   td:last-child { display: block; }
   td:last-child::before { display: block; margin-bottom: 7px; }
   .row-actions { flex-wrap: wrap; }
+  :host-context(.virtual-mode) td { height: auto; }
+  :host-context(.virtual-mode) td:nth-child(2),
+  :host-context(.virtual-mode) td:nth-child(3),
+  :host-context(.virtual-mode) td:nth-child(4),
+  :host-context(.virtual-mode) td:nth-child(5),
+  :host-context(.virtual-mode) td:nth-child(6) { display: none; }
+  :host-context(.virtual-mode) .row-actions a:not(:first-child),
+  :host-context(.virtual-mode) .row-actions button { display: none; }
 }

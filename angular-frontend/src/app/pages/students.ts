@@ -42,12 +42,14 @@ export class StudentsPage implements OnInit {
   readonly order = signal('asc');
   readonly page = signal(1);
   readonly size = signal(10);
+  readonly resetKey = signal(0);
+  readonly requestSize = () => this.size() === 0 ? 100 : this.size();
   readonly items = signal<Student[]>([]);
   readonly total = signal(0);
   readonly loading = signal(true);
   readonly error = signal('');
   readonly deleting = signal<string | null>(null);
-  readonly pages = () => Math.max(1, Math.ceil(this.total() / this.size()));
+  readonly pages = () => Math.max(1, Math.ceil(this.total() / this.requestSize()));
   private reload$ = new BehaviorSubject(false);
   ngOnInit(): void {
     this.changes.changes$.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => this.reload(true));
@@ -60,6 +62,7 @@ export class StudentsPage implements OnInit {
       )
       .subscribe(() => {
         this.page.set(1);
+        this.resetKey.update((value) => value + 1);
         this.reload();
       });
     const queries = this.reload$.pipe(
@@ -68,7 +71,7 @@ export class StudentsPage implements OnInit {
         sort: this.sort(),
         order: this.order(),
         page: this.page(),
-        size: this.size(),
+        size: this.requestSize(),
         silent,
       })),
     );
@@ -81,9 +84,9 @@ export class StudentsPage implements OnInit {
           this.error.set('');
           this.items.set(state.data.items);
           this.total.set(state.data.total);
-          if (this.page() < Math.ceil(state.data.total / this.size())) {
+          if (this.page() < Math.ceil(state.data.total / this.requestSize())) {
             this.api.list(this.form.getRawValue() as Filters, this.sort(), this.order(),
-              this.page() + 1, this.size()).pipe(takeUntilDestroyed(this.destroy))
+              this.page() + 1, this.requestSize()).pipe(takeUntilDestroyed(this.destroy))
               .subscribe({ error: () => {} });
           }
         }
@@ -103,17 +106,20 @@ export class StudentsPage implements OnInit {
   setSort(value: string): void {
     this.sort.set(value);
     this.page.set(1);
+    this.resetKey.update((current) => current + 1);
     this.reload();
   }
   toggleOrder(): void {
     this.order.set(this.order() === 'asc' ? 'desc' : 'asc');
     this.page.set(1);
+    this.resetKey.update((current) => current + 1);
     this.reload();
   }
   setSize(value: number): void {
-    if (![10, 20, 50, 100].includes(value)) return;
+    if (![0, 10, 20, 50, 100].includes(value)) return;
     this.size.set(value);
     this.page.set(1);
+    this.resetKey.update((current) => current + 1);
     this.reload();
   }
   go(page: number): void {
@@ -130,6 +136,7 @@ export class StudentsPage implements OnInit {
       .subscribe({
         next: () => {
           this.page.set(1);
+          this.resetKey.update((current) => current + 1);
           this.reload();
         },
         error: (err) => this.error.set(errorMessage(err)),

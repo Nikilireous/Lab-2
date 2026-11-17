@@ -13,7 +13,7 @@
     <p class="empty">По заданным условиям студенты не найдены.</p>
   }
   @if (items.length) {
-    <div class="table-scroll">
+    <div #viewport class="table-scroll" [class.virtual-mode]="size === 0" (scroll)="onScroll($event)">
       <table>
         <thead>
           <tr>
@@ -22,10 +22,16 @@
           </tr>
         </thead>
         <tbody>
+          @if (size === 0 && page > 1) {
+            <tr class="virtual-space"><td colspan="7" [style.height.px]="(page - 1) * 100 * 96"></td></tr>
+          }
           @for (student of items; track student.isuId) {
             <tr app-student-row [student]="student" [isAdmin]="isAdmin"
               [isDeleting]="deleting === student.isuId"
               (deleteRequested)="deleteRequested.emit($event)"></tr>
+          }
+          @if (size === 0 && page < pages) {
+            <tr class="virtual-space"><td colspan="7" [style.height.px]="(total - page * 100) * 96"></td></tr>
           }
         </tbody>
       </table>
@@ -36,14 +42,19 @@
       <select id="page-size" [value]="size" (change)="changeSize($event)">
         <option value="10">10</option><option value="20">20</option>
         <option value="50">50</option><option value="100">100</option>
+        <option value="0">Все</option>
       </select>
     </label>
-    <span>Страница {{ page }} из {{ pages }}</span>
-    <div>
+    @if (size !== 0) {
+      <span>Страница {{ page }} из {{ pages }}</span>
+      <div>
       <button class="button small" type="button" [disabled]="page <= 1 || loading"
         (click)="pageChanged.emit(page - 1)">Назад</button>
       <button class="button small" type="button" [disabled]="page >= pages || loading"
         (click)="pageChanged.emit(page + 1)">Вперёд</button>
-    </div>
+      </div>
+    } @else {
+      <span>Виртуальная прокрутка · {{ total }} записей</span>
+    }
   </div>
 </section>
