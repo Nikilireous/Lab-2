@@ -41,7 +41,7 @@ export class StudentsPage implements OnInit {
   readonly sort = signal('isuId');
   readonly order = signal('asc');
   readonly page = signal(1);
-  readonly size = signal(50);
+  readonly size = signal(10);
   readonly items = signal<Student[]>([]);
   readonly total = signal(0);
   readonly loading = signal(true);
@@ -79,15 +79,13 @@ export class StudentsPage implements OnInit {
         this.loading.set(state.loading);
         if ('data' in state) {
           this.error.set('');
-          const next = state.data.items;
-          if (this.page() === 1) this.items.set(next);
-          else {
-            const latest = new Map(next.map((student) => [student.isuId, student]));
-            const previous = this.items().map((student) => latest.get(student.isuId) ?? student);
-            const known = new Set(previous.map((student) => student.isuId));
-            this.items.set([...previous, ...next.filter((student) => !known.has(student.isuId))].slice(-200));
-          }
+          this.items.set(state.data.items);
           this.total.set(state.data.total);
+          if (this.page() < Math.ceil(state.data.total / this.size())) {
+            this.api.list(this.form.getRawValue() as Filters, this.sort(), this.order(),
+              this.page() + 1, this.size()).pipe(takeUntilDestroyed(this.destroy))
+              .subscribe({ error: () => {} });
+          }
         }
         if ('error' in state) {
           this.error.set(state.error);
@@ -112,8 +110,14 @@ export class StudentsPage implements OnInit {
     this.page.set(1);
     this.reload();
   }
+  setSize(value: number): void {
+    if (![10, 20, 50, 100].includes(value)) return;
+    this.size.set(value);
+    this.page.set(1);
+    this.reload();
+  }
   go(page: number): void {
-    if (this.loading() || page !== this.page() + 1 || this.page() >= this.pages()) return;
+    if (this.loading() || page < 1 || page > this.pages()) return;
     this.page.set(page);
     this.reload();
   }

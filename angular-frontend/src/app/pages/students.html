@@ -13,10 +13,10 @@
   (orderToggled)="toggleOrder()" />
 @defer (hydrate on immediate) {
 <app-student-list [items]="items()" [total]="total()" [loading]="loading()"
-  [error]="error()" [page]="page()" [pages]="pages()"
+  [error]="error()" [page]="page()" [pages]="pages()" [size]="size()"
   [deleting]="deleting()" [isAdmin]="auth.isAdmin()"
   (retryRequested)="reload()" (deleteRequested)="remove($event)"
-  (pageChanged)="go($event)" />
+  (pageChanged)="go($event)" (sizeChanged)="setSize($event)" />
 } @placeholder {
   <p class="muted">Загрузка списка студентов…</p>
 }

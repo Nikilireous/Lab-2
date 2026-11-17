@@ -48,7 +48,7 @@ export class StudentsApi {
         total: Number(response.headers.get('X-Total-Count') ?? 0),
       })),
       tap((value) => {
-        if (this.cache.size >= 20) this.cache.delete(this.cache.keys().next().value!);
+        if (this.cache.size >= 3) this.cache.delete(this.cache.keys().next().value!);
         this.cache.set(key, { value, expires: Date.now() + 2500 });
       }),
     );
