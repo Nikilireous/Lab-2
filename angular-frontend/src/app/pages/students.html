@@ -13,7 +13,7 @@
   (orderToggled)="toggleOrder()" />
 @defer (hydrate on immediate) {
 <app-student-list [items]="items()" [total]="total()" [loading]="loading()"
-  [error]="error()" [page]="page()" [pages]="pages()" [size]="size()"
+  [error]="error()" [page]="page()" [pages]="pages()" [size]="size()" [resetKey]="resetKey()"
   [deleting]="deleting()" [isAdmin]="auth.isAdmin()"
   (retryRequested)="reload()" (deleteRequested)="remove($event)"
   (pageChanged)="go($event)" (sizeChanged)="setSize($event)" />
