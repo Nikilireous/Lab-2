@@ -11,8 +11,12 @@
 <app-student-filters [form]="form" [sort]="sort()" [order]="order()"
   (resetRequested)="reset()" (sortChanged)="setSort($event)"
   (orderToggled)="toggleOrder()" />
+@defer (hydrate on immediate) {
 <app-student-list [items]="items()" [total]="total()" [loading]="loading()"
-  [error]="error()" [page]="page()" [pages]="pages()" [size]="size()"
+  [error]="error()" [page]="page()" [pages]="pages()"
   [deleting]="deleting()" [isAdmin]="auth.isAdmin()"
   (retryRequested)="reload()" (deleteRequested)="remove($event)"
-  (pageChanged)="go($event)" (sizeChanged)="setSize($event)" />
+  (pageChanged)="go($event)" />
+} @placeholder {
+  <p class="muted">Загрузка списка студентов…</p>
+}

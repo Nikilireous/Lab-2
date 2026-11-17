@@ -1,7 +1,11 @@
-import { appendResponseHeader, createError, defineEventHandler, getCookie, getRequestURL, sendRedirect, setHeader } from 'h3';
+import { appendResponseHeader, createError, defineEventHandler, getCookie, getRequestURL, sendRedirect, setHeader, setResponseStatus } from 'h3';
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname;
+  const known = ['/', '/login', '/register', '/profile', '/students', '/students/new'].includes(path)
+    || /^\/students\/[^/]+(?:\/edit)?\/?$/.test(path);
+  if (event.node.req.headers.accept?.includes('text/html') && !known)
+    setResponseStatus(event, 404);
   if (path !== '/profile' && path !== '/students' && !path.startsWith('/students/')) return;
   setHeader(event, 'Cache-Control', 'private, no-store');
   if (getCookie(event, 'lab4_access')) return;

@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       analog({
         ssr: true,
+        experimental: { streaming: true },
         prerender: {
           routes: async () => [],
         },

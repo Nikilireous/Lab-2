@@ -32,17 +32,10 @@
     </div>
   }
   <div class="pager">
-    <label>На странице
-      <select [value]="size" (change)="changeSize($event)">
-        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
-      </select>
-    </label>
-    <span>Страница {{ page }} из {{ pages }}</span>
-    <div>
-      <button class="button small" type="button" [disabled]="page <= 1 || loading"
-        (click)="pageChanged.emit(page - 1)">Назад</button>
-      <button class="button small" type="button" [disabled]="page >= pages || loading"
-        (click)="pageChanged.emit(page + 1)">Вперёд</button>
-    </div>
+    <span>В памяти не более 200 записей. Всего найдено: {{ total }}.</span>
+    @if (page < pages) {
+      <button class="button small" type="button" [disabled]="loading"
+        (click)="pageChanged.emit(page + 1)">Загрузить ещё 50</button>
+    }
   </div>
 </section>
