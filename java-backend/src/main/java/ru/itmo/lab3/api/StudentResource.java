@@ -50,7 +50,7 @@ public class StudentResource {
         List<StudentDto> students = result.students().stream().map(StudentDto::from).toList();
         return Response.ok(students).header("X-Total-Count", result.total())
             .header("X-Page", filters.getOrDefault("page", "1"))
-            .header("X-Page-Size", filters.getOrDefault("size", String.valueOf(students.size())))
+            .header("X-Page-Size", filters.getOrDefault("size", "20"))
             .build();
     }
 

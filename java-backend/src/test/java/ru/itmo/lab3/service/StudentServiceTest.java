@@ -14,6 +14,13 @@ class StudentServiceTest {
     private final StudentService service = new StudentService();
 
     @Test
+    void boundsUnfilteredListByDefault() {
+        StudentFilter filter = service.parseFilter(Map.of());
+        assertEquals(1, filter.page);
+        assertEquals(20, filter.size);
+    }
+
+    @Test
     void parsesFiltersSortingAndPagination() {
         StudentFilter filter = service.parseFilter(Map.of(
             "group", "M3301", "isForeign", "false", "dateFrom", "2025-01-01",

@@ -18,5 +18,4 @@ public class StudentFilter {
     public boolean descending;
     public int page = 1;
     public int size = 20;
-    public boolean paginated;
 }

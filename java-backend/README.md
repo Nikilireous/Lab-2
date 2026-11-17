@@ -83,7 +83,7 @@ set +a
 
 Для защищённых запросов браузер автоматически отправляет `lab4_access` cookie. `lab4_refresh` используется только для обновления сеанса и выхода. Оба JWT имеют флаг `HttpOnly`, поэтому JavaScript не может их прочитать. Access-cookie действует 15 минут, refresh-cookie — 7 дней; сроки меняются через `.env`. Для `POST`, `PUT`, `PATCH` и `DELETE` клиент передаёт значение читаемой cookie `XSRF-TOKEN` в заголовке `X-XSRF-TOKEN`; сервер проверяет его. В локальном HTTP-запуске `COOKIE_SECURE=false`, при запуске через HTTPS задайте `COOKIE_SECURE=true`.
 
-Фильтры: `fullName`, `group`, `isuId`, `dormitory`, `room`, `isForeign`, `settlementDate`, `dateFrom`, `dateTo`, `search`. Для порядка добавьте `sort` (`fullName`, `group`, `isuId`, `dormitory`, `room`, `settlementDate`, `isForeign`) и `order` (`asc`/`desc`). `page` и `size` включают пагинацию (размер до 100). Без этих двух параметров возвращается весь список: это сохраняет работу старого интерфейса. Общее число записей находится в заголовке `X-Total-Count`.
+Фильтры: `fullName`, `group`, `isuId`, `dormitory`, `room`, `isForeign`, `settlementDate`, `dateFrom`, `dateTo`, `search`. Для порядка добавьте `sort` (`fullName`, `group`, `isuId`, `dormitory`, `room`, `settlementDate`, `isForeign`) и `order` (`asc`/`desc`). Ответ всегда разбит на страницы: по умолчанию `page=1`, `size=20`, максимальный размер — 100. Общее число записей находится в заголовке `X-Total-Count`.
 
 ## Как устроен код
 

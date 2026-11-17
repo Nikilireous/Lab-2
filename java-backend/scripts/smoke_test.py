@@ -85,7 +85,23 @@ def main():
     reader.expect(403, "POST", "students/", student)
     admin.expect(403, "POST", "students/", student, csrf=False)
     admin.expect(201, "POST", "students/", student)
+    extra_ids = []
     try:
+        candidate = 100000
+        while len(extra_ids) < 20:
+            extra_id = str(candidate)
+            candidate += 1
+            if extra_id == student_id:
+                continue
+            admin.expect(201, "POST", "students/", {**student, "isuId": extra_id, "group": "P3213"})
+            extra_ids.append(extra_id)
+        first_page, page_headers = reader.expect(200, "GET", "students/")
+        assert len(first_page) == 20
+        assert int(page_headers["X-Page-Size"]) == 20
+        assert int(page_headers["X-Total-Count"]) >= 21
+        second_page, _ = reader.expect(200, "GET", "students/?page=2")
+        assert second_page
+
         admin.expect(409, "POST", "students/", student)
         detail, _ = reader.expect(200, "GET", f"students/{student_id}/")
         assert detail["isuId"] == student_id
@@ -121,6 +137,8 @@ def main():
         })
         assert cors["Access-Control-Allow-Credentials"] == "true"
     finally:
+        for extra_id in extra_ids:
+            admin.expect(204, "DELETE", f"students/{extra_id}/")
         admin.expect(204, "DELETE", f"students/{student_id}/")
     admin.expect(404, "GET", f"students/{student_id}/")
     print("Все сценарии пройдены.")

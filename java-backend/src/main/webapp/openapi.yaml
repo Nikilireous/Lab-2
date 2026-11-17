@@ -148,8 +148,8 @@ paths:
         - { in: query, name: notes, schema: { type: string, maxLength: 500 } }
         - { in: query, name: sort, schema: { type: string, enum: [fullName, group, isuId, dormitory, room, settlementDate, isForeign] } }
         - { in: query, name: order, schema: { type: string, enum: [asc, desc] } }
-        - { in: query, name: page, schema: { type: integer, minimum: 1 } }
-        - { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
         '200':
           description: Массив студентов; общее число в X-Total-Count
@@ -181,7 +181,7 @@ paths:
         '422': { $ref: '#/components/responses/BadRequest' }
     x-query:
       summary: Фильтрация JSON-телом для существующего клиента
-      description: Тот же поиск, что GET, но параметры передаются JSON-объектом.
+      description: Тот же поиск, что GET, но параметры передаются JSON-объектом. По умолчанию первая страница по 20 записей.
       security: [{ cookieAuth: [] }]
       requestBody:
         required: true

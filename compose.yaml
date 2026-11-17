@@ -44,6 +44,8 @@ services:
 
   frontend:
     build: ${FRONTEND_BUILD_CONTEXT}
+    environment:
+      API_URL: ${ANALOG_API_URL}
     ports:
       - "${BIND_ADDRESS}:${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     depends_on:

@@ -3,11 +3,17 @@ package ru.itmo.lab3.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "students")
+@Table(name = "students", indexes = {
+    @Index(name = "idx_students_name", columnList = "full_name"),
+    @Index(name = "idx_students_group", columnList = "group_name"),
+    @Index(name = "idx_students_dorm_room", columnList = "dormitory, room"),
+    @Index(name = "idx_students_date", columnList = "settlement_date")
+})
 public class Student {
     @Id
     @Column(name = "isu_id", length = 6)

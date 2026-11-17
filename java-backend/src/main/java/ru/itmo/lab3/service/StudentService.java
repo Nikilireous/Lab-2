@@ -150,11 +150,8 @@ public class StudentService {
             throw new ApiException(422, "order", "Используйте asc или desc.");
         filter.descending = order.equals("desc");
 
-        filter.paginated = values.containsKey("page") || values.containsKey("size");
-        if (filter.paginated) {
-            filter.page = number(values.getOrDefault("page", "1"), "page", "Номер страницы указан неверно", 1, 100000);
-            filter.size = number(values.getOrDefault("size", "20"), "size", "Размер страницы указан неверно", 1, 100);
-        }
+        filter.page = number(values.getOrDefault("page", "1"), "page", "Номер страницы указан неверно", 1, 100000);
+        filter.size = number(values.getOrDefault("size", "20"), "size", "Размер страницы указан неверно", 1, 100);
         return filter;
     }
 

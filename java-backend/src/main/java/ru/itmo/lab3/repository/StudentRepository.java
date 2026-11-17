@@ -46,10 +46,8 @@ public class StudentRepository {
         }
 
         TypedQuery<Student> students = em.createQuery(query);
-        if (filter.paginated) {
-            students.setFirstResult((filter.page - 1) * filter.size);
-            students.setMaxResults(filter.size);
-        }
+        students.setFirstResult((filter.page - 1) * filter.size);
+        students.setMaxResults(filter.size);
 
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Student> countRoot = countQuery.from(Student.class);

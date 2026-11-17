@@ -1,4 +1,5 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, makeStateKey, PLATFORM_ID, signal, TransferState } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router, CanActivateFn } from '@angular/router';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
@@ -6,10 +7,12 @@ import { User } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
+  private transfer = inject(TransferState);
   private http = inject(HttpClient);
   private router = inject(Router);
-  private state = signal<User | null>(null);
-  private channel = new BroadcastChannel('lab4-session');
+  private state = signal<User | null>(this.transfer.get(makeStateKey<User | null>('auth-user'), null));
+  private browser = isPlatformBrowser(inject(PLATFORM_ID));
+  private channel = this.browser ? new BroadcastChannel('lab4-session') : null;
   private pendingMe?: Observable<User>;
   private pendingRefresh?: Observable<void>;
   readonly user = this.state.asReadonly();
@@ -17,6 +20,8 @@ export class AuthStore {
   readonly logoutError = signal('');
 
   constructor() {
+    if (this.browser) this.transfer.remove(makeStateKey<User | null>('auth-user'));
+    if (!this.channel) return;
     this.channel.onmessage = ({ data }) => {
       if (data === 'logout') this.clear();
       if (data === 'login') this.me().subscribe({
@@ -28,7 +33,7 @@ export class AuthStore {
 
   private signedIn(user: User): void {
     this.state.set(user);
-    this.channel.postMessage('login');
+    this.channel?.postMessage('login');
   }
 
   login(username: string, password: string): Observable<User> {
@@ -44,7 +49,10 @@ export class AuthStore {
   me(): Observable<User> {
     if (this.pendingMe) return this.pendingMe;
     this.pendingMe = this.http.get<User>('/api/auth/me').pipe(
-      tap((user) => this.state.set(user)),
+      tap((user) => {
+        this.state.set(user);
+        if (!this.browser) this.transfer.set(makeStateKey<User | null>('auth-user'), user);
+      }),
       finalize(() => { this.pendingMe = undefined; }),
       shareReplay(1),
     );
@@ -70,7 +78,7 @@ export class AuthStore {
     this.http.post<void>('/api/auth/logout', {}).subscribe({
       next: () => {
         this.clear();
-        this.channel.postMessage('logout');
+        this.channel?.postMessage('logout');
       },
       error: () => this.logoutError.set('Не удалось выйти: сервер недоступен. Попробуйте ещё раз.'),
     });
@@ -78,7 +86,7 @@ export class AuthStore {
 
   expire(): void {
     this.clear();
-    this.channel.postMessage('logout');
+    this.channel?.postMessage('logout');
   }
 
   private clear(): void {
