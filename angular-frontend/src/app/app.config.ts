@@ -2,8 +2,8 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideHttpClient, withFetch, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideFileRouter } from '@analogjs/router';
-import { authInterceptor } from './core/auth';
-import { serverApiInterceptor } from './core/server-api';
+import { authInterceptor } from './services/auth';
+import { serverApiInterceptor } from './services/server-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [

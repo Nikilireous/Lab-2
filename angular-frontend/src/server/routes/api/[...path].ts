@@ -1,9 +1,9 @@
 import { defineEventHandler, getRequestURL, proxyRequest } from 'h3';
+import { apiUrl } from '../../api-url';
 
 export default defineEventHandler(async (event) => {
   const url = getRequestURL(event);
-  const backend = process.env['API_URL'] || 'http://127.0.0.1:8000';
-  const target = `${backend}${url.pathname}${url.search}`;
+  const target = `${apiUrl()}${url.pathname}${url.search}`;
   if (event.method !== 'QUERY') return proxyRequest(event, target);
 
   const chunks: Buffer[] = [];

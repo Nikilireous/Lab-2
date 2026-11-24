@@ -2,7 +2,7 @@ import { DestroyRef, inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, of, tap } from 'rxjs';
-import { Filters, Student, StudentPage } from './models';
+import { Filters, Student, StudentPage } from '../models/student';
 import { StudentChanges } from './student-changes';
 
 @Injectable({ providedIn: 'root' })

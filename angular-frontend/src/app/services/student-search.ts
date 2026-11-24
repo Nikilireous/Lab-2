@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, of, startWith, switchMap } from 'rxjs';
 import { errorMessage } from './errors';
-import { Filters, StudentPage } from './models';
+import { Filters, StudentPage } from '../models/student';
 import { StudentsApi } from './students';
 
 export interface SearchQuery {

@@ -3,14 +3,14 @@ import { FormBuilder } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs';
-import { AuthStore } from '../core/auth';
-import { errorMessage } from '../core/errors';
-import { Filters, Student } from '../core/models';
-import { StudentsApi } from '../core/students';
-import { StudentSearch } from '../core/student-search';
-import { StudentChanges } from '../core/student-changes';
-import { StudentFilters } from './student-filters';
-import { StudentList } from './student-list';
+import { AuthStore } from '../../services/auth';
+import { errorMessage } from '../../services/errors';
+import { Filters, Student } from '../../models/student';
+import { StudentsApi } from '../../services/students';
+import { StudentSearch } from '../../services/student-search';
+import { StudentChanges } from '../../services/student-changes';
+import { StudentFilters } from '../../components/student-filters/student-filters';
+import { StudentList } from '../../components/student-list/student-list';
 
 @Component({
   selector: 'app-students',

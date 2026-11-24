@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router, CanActivateFn } from '@angular/router';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
-import { User } from './models';
+import { User } from '../models/user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {

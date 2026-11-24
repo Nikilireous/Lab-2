@@ -1,4 +1,5 @@
 import { appendResponseHeader, createError, defineEventHandler, getCookie, getRequestURL, sendRedirect, setHeader, setResponseStatus } from 'h3';
+import { apiUrl } from '../api-url';
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname;
@@ -14,12 +15,11 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  const backend = process.env['API_URL'] || 'http://127.0.0.1:8000';
   const originalCookie = event.node.req.headers.cookie || '';
   const csrf = getCookie(event, 'XSRF-TOKEN') || '';
   let refreshed: Response;
   try {
-    refreshed = await fetch(`${backend}/api/auth/refresh`, {
+    refreshed = await fetch(`${apiUrl()}/api/auth/refresh`, {
       method: 'POST',
       headers: { Cookie: originalCookie, 'X-XSRF-TOKEN': csrf },
       signal: AbortSignal.timeout(5000),

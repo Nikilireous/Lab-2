@@ -1,13 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthStore } from './core/auth';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { SiteHeader } from './components/site-header/site-header';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, SiteHeader],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  readonly auth = inject(AuthStore);
-}
+export class App {}

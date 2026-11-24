@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AuthStore } from '../core/auth';
-import { errorMessage } from '../core/errors';
+import { AuthStore } from '../../services/auth';
+import { errorMessage } from '../../services/errors';
 
 @Component({
   selector: 'app-profile',

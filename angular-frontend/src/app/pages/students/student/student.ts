@@ -2,11 +2,11 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, finalize, map, merge, of, switchMap } from 'rxjs';
-import { AuthStore } from '../core/auth';
-import { errorMessage } from '../core/errors';
-import { Student } from '../core/models';
-import { StudentsApi } from '../core/students';
-import { StudentChanges } from '../core/student-changes';
+import { AuthStore } from '../../../services/auth';
+import { errorMessage } from '../../../services/errors';
+import { Student } from '../../../models/student';
+import { StudentsApi } from '../../../services/students';
+import { StudentChanges } from '../../../services/student-changes';
 
 @Component({
   selector: 'app-student',

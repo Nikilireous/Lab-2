@@ -1,6 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
-import { Student } from '../core/models';
-import { StudentRow } from './student-row';
+import { Student } from '../../models/student';
+import { StudentRow } from '../student-row/student-row';
 
 @Component({
   selector: 'app-student-list',

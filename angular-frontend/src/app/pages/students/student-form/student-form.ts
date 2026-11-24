@@ -3,9 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { errorMessage } from '../core/errors';
-import { Student } from '../core/models';
-import { StudentsApi } from '../core/students';
+import { errorMessage } from '../../../services/errors';
+import { Student } from '../../../models/student';
+import { StudentsApi } from '../../../services/students';
 
 @Component({
   selector: 'app-student-form',

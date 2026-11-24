@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Student } from '../core/models';
+import { Student } from '../../models/student';
 
 @Component({
   selector: 'tr[app-student-row]',
