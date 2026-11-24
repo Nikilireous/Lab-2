@@ -13,45 +13,89 @@
     <p class="empty">По заданным условиям студенты не найдены.</p>
   }
   @if (items.length) {
-    <div #viewport class="table-scroll" [class.virtual-mode]="size === 0" (scroll)="onScroll($event)">
-      <table>
-        <thead>
-          <tr>
-            <th>Студент</th><th>Группа</th><th>ИСУ ID</th><th>Общежитие</th>
-            <th>Комната</th><th>Дата</th><th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (size === 0 && page > 1) {
-            <tr class="virtual-space"><td colspan="7" [style.height.px]="(page - 1) * 100 * 96"></td></tr>
-          }
-          @for (student of items; track student.isuId) {
-            <tr app-student-row [student]="student" [isAdmin]="isAdmin"
-              [isDeleting]="deleting === student.isuId"
-              (deleteRequested)="deleteRequested.emit($event)"></tr>
-          }
-          @if (size === 0 && page < pages) {
-            <tr class="virtual-space"><td colspan="7" [style.height.px]="(total - page * 100) * 96"></td></tr>
-          }
-        </tbody>
-      </table>
+    <div class="table-frame">
+      <div
+        #viewport
+        class="table-scroll"
+        [class.virtual-mode]="size === 0"
+        (scroll)="onScroll($event)"
+      >
+        <table class="student-table">
+          <thead>
+            <tr>
+              <th>Студент</th>
+              <th>Группа</th>
+              <th>ИСУ ID</th>
+              <th>Общежитие</th>
+              <th>Комната</th>
+              <th>Дата</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (size === 0 && page > 1) {
+              <tr class="virtual-space">
+                <td [style.height.px]="chunkHeight"><span>Загружаем предыдущие записи…</span></td>
+              </tr>
+            }
+            @if (size === 0 && loading) {
+              <tr class="virtual-loading">
+                <td [style.height.px]="chunkHeight"><span>Загрузка записей…</span></td>
+              </tr>
+            } @else {
+              @for (student of items; track student.isuId) {
+                <tr
+                  app-student-row
+                  [student]="student"
+                  [isAdmin]="isAdmin"
+                  [isDeleting]="deleting === student.isuId"
+                  (deleteRequested)="deleteRequested.emit($event)"
+                ></tr>
+              }
+            }
+            @if (size === 0 && page < pages) {
+              <tr class="virtual-space">
+                <td [style.height.px]="chunkHeight"><span>Загружаем следующие записи…</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (size === 0 && loading) {
+        <div class="virtual-status" role="status">Загрузка записей…</div>
+      }
     </div>
   }
   <div class="pager">
-    <label for="page-size">На странице
+    <label for="page-size"
+      >На странице
       <select id="page-size" [value]="size" (change)="changeSize($event)">
-        <option value="10">10</option><option value="20">20</option>
-        <option value="50">50</option><option value="100">100</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
         <option value="0">Все</option>
       </select>
     </label>
     @if (size !== 0) {
       <span>Страница {{ page }} из {{ pages }}</span>
       <div>
-      <button class="button small" type="button" [disabled]="page <= 1 || loading"
-        (click)="pageChanged.emit(page - 1)">Назад</button>
-      <button class="button small" type="button" [disabled]="page >= pages || loading"
-        (click)="pageChanged.emit(page + 1)">Вперёд</button>
+        <button
+          class="button small"
+          type="button"
+          [disabled]="page <= 1 || loading"
+          (click)="pageChanged.emit(page - 1)"
+        >
+          Назад
+        </button>
+        <button
+          class="button small"
+          type="button"
+          [disabled]="page >= pages || loading"
+          (click)="pageChanged.emit(page + 1)"
+        >
+          Вперёд
+        </button>
       </div>
     } @else {
       <span>Виртуальная прокрутка · {{ total }} записей</span>

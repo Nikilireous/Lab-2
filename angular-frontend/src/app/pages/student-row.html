@@ -1,5 +1,6 @@
 <td data-label="Студент">
   <a class="student-link" [routerLink]="['/students', student.isuId]">{{ student.fullName }}</a>
+  <small class="compact-id">ИСУ {{ student.isuId }}</small>
 </td>
 <td data-label="Группа">{{ student.group }}</td>
 <td data-label="ИСУ ID">{{ student.isuId }}</td>
@@ -8,16 +9,22 @@
 <td data-label="Дата">{{ student.settlementDate }}</td>
 <td data-label="Действия">
   <div class="row-actions">
-    <a class="button small" [routerLink]="['/students', student.isuId]">Открыть</a>
+    <a class="button small" [routerLink]="['/students', student.isuId]" aria-label="Открыть студента">
+      <span class="action-text">Открыть</span><span class="action-icon" aria-hidden="true">↗</span>
+    </a>
     @if (isAdmin) {
-      <a class="button small" [routerLink]="['/students', student.isuId, 'edit']">Изменить</a>
+      <a class="button small" [routerLink]="['/students', student.isuId, 'edit']" aria-label="Изменить студента">
+        <span class="action-text">Изменить</span><span class="action-icon" aria-hidden="true">✎</span>
+      </a>
       <button
         type="button"
         class="button small danger"
+        aria-label="Удалить студента"
         [disabled]="isDeleting"
         (click)="deleteRequested.emit(student)"
       >
-        {{ isDeleting ? 'Удаляем…' : 'Удалить' }}
+        <span class="action-text">{{ isDeleting ? 'Удаляем…' : 'Удалить' }}</span>
+        <span class="action-icon" aria-hidden="true">×</span>
       </button>
     }
   </div>

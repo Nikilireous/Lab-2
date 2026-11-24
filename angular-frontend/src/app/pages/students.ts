@@ -123,7 +123,7 @@ export class StudentsPage implements OnInit {
     this.reload();
   }
   go(page: number): void {
-    if (this.loading() || page < 1 || page > this.pages()) return;
+    if ((this.loading() && this.size() !== 0) || page < 1 || page > this.pages()) return;
     this.page.set(page);
     this.reload();
   }
