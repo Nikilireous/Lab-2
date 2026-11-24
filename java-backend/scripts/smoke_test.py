@@ -5,6 +5,7 @@ import json
 import os
 import random
 import urllib.error
+import urllib.parse
 import urllib.request
 
 API = os.getenv("API_URL", "http://127.0.0.1:8000/api/")
@@ -108,10 +109,17 @@ def main():
         listing, headers = reader.expect(200, "GET", "students/?group=P3212&sort=fullName&order=desc&page=1&size=5")
         assert any(item["isuId"] == student_id for item in listing)
         assert int(headers["X-Total-Count"]) >= 1
+        for name_part in ("Иванов", "Иван", "Иванович", "иванов"):
+            matches, _ = reader.expect(200, "GET", f"students/?group=P3212&fullName={urllib.parse.quote(name_part)}")
+            assert any(item["isuId"] == student_id for item in matches)
         queried, _ = reader.expect(200, "QUERY", "students/", {
             "group": "P3212", "dormitory": 7, "isForeign": False,
         })
         assert any(item["isuId"] == student_id for item in queried)
+        invalid_group = {"fullName": "Иванов", "isuId": student_id, "group": "кушен"}
+        get_error, _ = reader.expect(422, "GET", f"students/?fullName={urllib.parse.quote('Иванов')}&isuId={student_id}&group={urllib.parse.quote('кушен')}")
+        query_error, _ = reader.expect(422, "QUERY", "students/", invalid_group)
+        assert "group" in get_error["errors"] and "group" in query_error["errors"]
         admin.expect(422, "PATCH", f"students/{student_id}/", {"room": 999})
         changed, _ = admin.expect(200, "PATCH", f"students/{student_id}/", {"notes": "Изменено"})
         assert changed["notes"] == "Изменено"

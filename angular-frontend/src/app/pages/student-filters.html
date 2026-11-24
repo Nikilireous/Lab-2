@@ -1,7 +1,7 @@
 <section class="panel filters-panel" aria-label="Поиск и фильтры">
   <form [formGroup]="form" class="filters-grid">
     <label class="wide">Поиск<input formControlName="search" placeholder="ФИО или ИСУ ID" maxlength="120" /></label>
-    <label>ФИО<input formControlName="fullName" placeholder="Точное ФИО" /></label>
+    <label>ФИО<input formControlName="fullName" placeholder="Имя, фамилия или отчество" /></label>
     <label>Группа<input formControlName="group" placeholder="P3212" /></label>
     <label>ИСУ ID<input formControlName="isuId" placeholder="123456" /></label>
     <label>Общежитие<input type="number" min="1" max="20" formControlName="dormitory" /></label>

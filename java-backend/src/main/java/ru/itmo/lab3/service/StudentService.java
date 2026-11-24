@@ -75,7 +75,7 @@ public class StudentService {
         }
         if (input.group != null) {
             if (!input.group.matches("[A-Z][1-4][1-5]\\d{2}"))
-                throw new ApiException(422, "group", "Неверный формат группы.");
+                throw new ApiException(422, "group", "Ожидается формат группы, например P3212.");
             student.setGroup(input.group);
         }
         if (input.dormitory != null) {
@@ -109,12 +109,13 @@ public class StudentService {
     public StudentFilter parseFilter(Map<String, String> values) {
         StudentFilter filter = new StudentFilter();
         String fullName = values.get("fullName");
+        if (fullName != null) fullName = fullName.trim().replaceAll("\\s+", " ");
         if (fullName != null && !fullName.matches("[A-Za-zА-Яа-яЁё -]{2,120}"))
-            throw new ApiException(422, "fullName", "Неверное ФИО.");
+            throw new ApiException(422, "fullName", "Введите не меньше двух букв имени, фамилии или отчества.");
         filter.fullName = fullName;
         String group = values.get("group");
         if (group != null && !group.matches("[A-Z][1-4][1-5]\\d{2}"))
-            throw new ApiException(422, "group", "Неверный формат группы.");
+            throw new ApiException(422, "group", "Ожидается формат группы, например P3212.");
         filter.group = group;
         String isuId = values.get("isuId");
         if (isuId != null && !isuId.matches("[1-9]\\d{5}"))

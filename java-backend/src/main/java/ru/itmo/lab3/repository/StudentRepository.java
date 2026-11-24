@@ -59,7 +59,8 @@ public class StudentRepository {
 
     private Predicate[] predicates(CriteriaBuilder cb, Root<Student> root, StudentFilter filter) {
         List<Predicate> parts = new ArrayList<>();
-        if (filter.fullName != null) parts.add(cb.equal(root.get("fullName"), filter.fullName));
+        if (filter.fullName != null)
+            parts.add(cb.like(cb.lower(root.get("fullName")), "%" + filter.fullName.toLowerCase(Locale.ROOT) + "%"));
         if (filter.group != null) parts.add(cb.equal(root.get("group"), filter.group));
         if (filter.isuId != null) parts.add(cb.equal(root.get("isuId"), filter.isuId));
         if (filter.dormitory != null) parts.add(cb.equal(root.get("dormitory"), filter.dormitory));
